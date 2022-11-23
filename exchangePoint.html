@@ -1,0 +1,66 @@
+<html>
+	<meta charset="utf-8">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <!-- <script type="text/javascript" src="data/data.js"></script> -->
+	<script language="javascript">
+	function PointExNum(){
+		// confirm("兌換成功\n兌換數量:2\n剩餘點數:800");
+		// //取得輸入值
+		const accountElement = document.getElementsByName('account');
+  		const account = accountElement[0].value;
+  		const pointexnumElement = document.getElementsByName('pointexnum');
+  		const pointexnum = pointexnumElement[0].value;
+ 
+		//比對帳號資料
+		var jsonData = $.ajax({
+			    type: "POST",
+			    url: "sql/checkAccount.php",
+			    data: {at: account},
+			    dataType: "json",
+		        async: false
+		}).responseText;
+		var obj = eval("(" + jsonData + ")");
+		//判斷帳號是否存在
+		if (obj[0].success != '1'){
+			var jsonData = $.ajax({
+			    type: "POST",
+			    url: "sql/checkPoint.php",
+			    data: {at: account, pen: pointexnum},
+			    dataType: "json",
+		        async: false
+				}).responseText;
+			var obj = eval("(" + jsonData + ")");
+		//判斷point是否足夠
+			if (obj[0].success == '1'){
+				var jsonData = $.ajax({
+		        type: "POST",
+		        url: "sql/PointExchangeUpd.php",
+		        data: {at: account, pen: pointexnum},
+		        dataType: "json",
+		        async: false
+			    }).responseText;
+				var obj1 = eval("(" + jsonData + ")");
+				if (obj[0].success == '1'){
+					confirm('兌換成功');	
+				}else{
+					confirm('兌換失敗');	
+				}
+			}else{				    	
+				confirm('點數不夠哦');					    	
+			}
+		}else{
+			confirm("帳號不存在呢");
+		}
+		
+		
+	}
+	</script>
+	<FORM METHOD=POST ACTION="auth.php">
+		<CENTER>
+			Account: <INPUT TYPE="text" NAME="account"><BR>
+			兌換張數: <INPUT TYPE="text" NAME="pointexnum"><BR>
+			
+		<INPUT TYPE="button" onclick="PointExNum()" value="確認兌換">
+		</CENTER>
+	</FORM>
+</html>

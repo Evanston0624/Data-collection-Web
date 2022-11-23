@@ -1,0 +1,152 @@
+<html>
+	<meta charset="utf-8">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <!-- <script type="text/javascript" src="data/data.js"></script> -->
+	<script language="javascript">
+	function NewAccount(){
+		//取得輸入值
+		const accountElement = document.getElementsByName('account');
+  		const account = accountElement[0].value;
+  		const passwordElement = document.getElementsByName('password');
+  		const password = passwordElement[0].value;
+  		const cpasswordElement = document.getElementsByName('cpassword');
+  		const cpassword = cpasswordElement[0].value;
+  		const nameElement = document.getElementsByName('name');
+  		const name = nameElement[0].value;
+  		const emailElement = document.getElementsByName('email');
+  		const email = emailElement[0].value;
+  		const mobileElement = document.getElementsByName('mobile');
+  		const mobile = mobileElement[0].value;
+  		const mednumElement = document.getElementsByName('mednum');
+  		const mednum = mednumElement[0].value;
+  		var backorappElement = document.getElementsByName('backorapp');
+  		//語言區
+  		// lanStr = ["如果您擁有病歷號，請確認病例號長度共為8碼\n沒有病歷號的話請確認病例號為空","創建帳號成功!","3秒後前往登入頁面","創建帳號失敗","請連絡相關人員進行協助","請輸入正確的電話號碼","請輸入正確的E-mail","請輸入正確的名子","兩次密碼輸入的不同喔","密碼長度需大於4個字元，小於12個字元","帳號重複了呢","帳號長度需大於4個字元，小於12個字元"];
+  		lanStr = ["If you have a medical record number, please confirm that the length of the case number is 8 codes in total\nIf you do not have a medical record number, please confirm that the case number is empty", "Create an account successfully!", "Go to the login page after 3 seconds"," Failed to create an account", "Please contact the relevant personnel for assistance", "Please enter the correct phone number", "Please enter the correct E-mail", "Please enter the correct name", "The two passwords are different. ","The length of the password must be greater than 4 characters and less than 12 characters","The account number is duplicated","The length of the account number must be greater than 4 characters and less than 12 characters"];
+  		// var backorapp = backorappElement[0].value;
+  		for (var i=0; i<backorappElement.length; i++) {
+			if (backorappElement[i].checked) {
+			  var backorapp = i;
+			  break;
+			}
+		}
+		// confirm(backorapp);
+		// confirm(account.length);
+		//比對帳號資料
+		var jsonData = $.ajax({
+			    type: "POST",
+			    url: "sql/checkAccount.php",
+			    data: {at: account},
+			    dataType: "json",
+		        async: false
+		}).responseText;
+		var obj = eval("(" + jsonData + ")");
+		//判斷帳號長度
+		if (account.length>= 4 && account.length <=12){
+			//判斷帳號是否重複
+			if (obj[0].success == '1'){
+				//判斷密碼長度
+				if(password.length>= 4 && password.length <=12){
+					//判斷兩個密碼是否相等
+					if (password == cpassword){
+						//判斷名子長度>1
+						if (name.length>=1){
+							//判斷mail長度>3 且 包含@
+							if (email.length>=3 && email.indexOf('@') != -1){
+								//判斷電話號碼長度> 6
+								if (mobile.length>=6){
+									//創建APP帳號
+									backorapp = 1;
+									if(backorapp == 1){
+										//有病歷號時
+										if (mednum != ''){
+											if (mednum.length==8){
+												var checknum = 1;
+												var jsonData = $.ajax({
+											        type: "POST",
+											        url: "sql/RegistUser.php",
+											        data: {ckn: checknum, at: account, pw: password, name: name, email: email, mobile: mobile, mednum: mednum},
+											        dataType: "json",
+											        async: false
+											    }).responseText;
+									    		var obj1 = eval("(" + jsonData + ")");
+									    	}else{
+									    		confirm(lanStr[0]);
+											}
+										//無病例號時
+										}else if(mednum == ''){
+											var checknum = 2;
+											var jsonData = $.ajax({
+											        type: "POST",
+											        url: "sql/RegistUser.php",
+											        data: {ckn: checknum, at: account, pw: password, name: name, email: email, mobile: mobile},
+											        dataType: "json",
+											        async: false
+											    }).responseText;
+									    	var obj1 = eval("(" + jsonData + ")");
+										}
+									}
+									// alert(obj1[0].success);
+								    if (obj1[0].success == '1' || obj1[0].success == null){
+								    	swal(lanStr[1],lanStr[2], "success")
+									  	setTimeout(function(){
+										window.location.assign("http://140.116.82.102:8080/app_webpage/login_en.html");
+										}, 3000);
+								    }else{
+	
+								    	swal(lanStr[3],lanStr[4], "error");
+								    }
+								}else{
+									swal(lanStr[3],lanStr[5], "warning");
+								}
+							}else{
+								swal(lanStr[3],lanStr[6], "warning");
+							}
+						}else{
+							swal(lanStr[3],lanStr[7], "warning");
+						}
+			    	}else{
+			    		swal(lanStr[3],lanStr[8], "warning");
+			    	}
+			    }else{
+			    	swal(lanStr[3],lanStr[9], "warning");
+			    }
+		    }else{
+		    	swal(lanStr[3],lanStr[10], "warning");
+		    }
+		}else{
+			swal(lanStr[3],lanStr[11], "warning");
+		}
+		
+		
+	}
+	function toLogin(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/login_en.html");
+	}
+	function toforgotPassword(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/forgotPassword_en.html");
+	}
+	</script>
+		<p>
+			<link href="styles/style.css" rel="stylesheet" type="text/css">
+			<link href="styles/styler.css" rel="stylesheet" type="text/css">
+			<body>
+				<!-- <link href="styles/style.css" rel="stylesheet" type="text/css"> -->
+				Account: <INPUT TYPE="text" NAME="account"><BR>
+				Password: <INPUT TYPE="cpassword" NAME="password"><BR>
+				Enter the password again: <INPUT TYPE="text" NAME="cpassword"><BR>
+				Name: <INPUT TYPE="text" NAME="name"><BR>
+				E-mail: <INPUT TYPE="text" NAME="email"><BR>
+				Mobile phone number: <INPUT TYPE="text" NAME="mobile"><BR>
+				Medical record number (optional): <INPUT TYPE="text" NAME="mednum"><BR>
+				<INPUT TYPE="button" onclick="NewAccount()" value="Create an account">
+				<BR>
+			</body>
+			<head>
+				<INPUT TYPE="button" onclick="toLogin()" value="Already have an account? Go to login">
+				<INPUT TYPE="button" onclick="toforgotPassword()" value="Forgot password?">
+			</head>
+		</p>
+</html>

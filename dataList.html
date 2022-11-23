@@ -1,0 +1,498 @@
+<html>
+	<meta charset="utf-8">
+	<link href="//vjs.zencdn.net/7.3.0/video-js.min.css" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <script src="//vjs.zencdn.net/7.3.0/video.min.js"></script>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <!-- <link href="app_style/style.css" rel="stylesheet"> -->
+    <!-- <script type="text/javascript" src="data/data.js"></script> -->
+
+	<script language="javascript">
+	window.onload = function () {
+;		//確定登入狀態
+		checkLogin();
+
+	};
+	// 查詢區
+	function dataSearch(){
+		// lanStrTableti = ['資料種類','內容','日期','修改或刪除','躁狂量表','抑鬱量表'];
+		lanStrTableti = ['Data Type','Content','Date','Update or delete', 'Manic Scale','Depression Scale'];
+
+		// typeStr = ['文字', '語音', '', '影音', '每日心情', '起床時間', '抑鬱量表', '躁狂量表', '睡眠時間', '抑鬱自評量表分數', '躁狂自評量表分數:'];
+    typeStr = ['text', 'audio', '', 'audio-vasual', 'daily mood', 'wake up time', 'ASRM', 'DASS', 'Sleep state', 'ASRM score:', 'DASS score:'];
+
+    // lanStrNot = ['Oh noes!','沒有查詢到資料哦!'];
+		lanStrNot = ['Oh noes!','No relevant information found!'];
+		js();
+		//取得list選項
+		//list value = All, midea, sleep, mood, scale.
+		var x = document.getElementById('list');
+		console.log("list = "+x.value);
+
+		if (x.value != null){
+			console.log("x = "+x.value);
+			//取得帳號資料
+			var account = getCookie('account');
+
+			//查詢歷史資料
+			var jsonData = $.ajax({
+				    type: "POST",
+				    url: "sql/selectFeedback.php",
+				    data: {at: account, type : x.value},
+				    dataType: "json",
+			        async: false
+			}).responseText;
+			var obj = eval("(" + jsonData + ")");
+			var data = obj[0];
+			console.log("obj.length = "+obj.length);
+			console.log("data = "+data.datetime);
+			console.log("data = "+data.type);
+
+			//Get Element Table
+      var table = document.getElementById("table");
+      //remove
+      table.remove();
+
+      //輸入表格標題
+      var tablehere =document.getElementById("tablehere");
+      table = document.createElement("table");
+      table.setAttribute("id","table");
+      table.className = "table";
+      tablehere.appendChild(table);
+
+      if(x.value != 4){
+	      var row = table.insertRow(0);
+	      var cell1 = row.insertCell(0);
+	      var cell2 = row.insertCell(1);
+	      var cell3 = row.insertCell(2);
+	      var cell4 = row.insertCell(3);
+	      cell1.innerHTML = lanStrTableti[0];
+	      cell2.innerHTML = lanStrTableti[1];
+	      cell3.innerHTML = lanStrTableti[2];
+	      cell4.innerHTML = lanStrTableti[3];
+
+	    //self scale
+	    }else if(x.value == 4){
+	    	var row = table.insertRow(0);
+	      var cell1 = row.insertCell(0);
+	      var cell2 = row.insertCell(1);
+	      var cell3 = row.insertCell(2);
+	      cell1.innerHTML = lanStrTableti[4];
+	      cell2.innerHTML = lanStrTableti[5];
+	      cell3.innerHTML = lanStrTableti[2];
+	    }
+
+      //輸入資料
+      for(i=0;i<obj.length;i++){
+        	var row = table.insertRow(i+1);
+        	var cell1 = row.insertCell(0);
+        	var cell2 = row.insertCell(1);
+        	var cell3 = row.insertCell(2);
+        	//搜尋INF表格
+        if(x.value != 4){
+        	var cell4 = row.insertCell(3);
+        	lanStr = ['view', 'Update'];
+        	// lanStr = ['查看', '更新'];
+
+        	if(obj[i].inf_write.includes(".wav") || obj[i].inf_write.includes(".mp3")||obj[i].inf_write.includes(".AAC")||obj[i].inf_write.includes(".3GPP")||obj[i].inf_write.includes(".m4a")){
+        		// speech
+	        	cell1.innerHTML = typeStr[obj[i].inf_type];
+	        	cell2.innerHTML = obj[i].inf_write;
+	        	cell3.innerHTML = obj[i].datetime;
+	        	cell4.innerHTML = "<button onclick='viewA("+i+")'>"+lanStr[0]+"</button>";
+
+	       	
+	        }else if(obj[i].inf_write.includes(".mp4")||obj[i].inf_write.includes(".MOV")||obj[i].inf_write.includes(".m4v")){
+	        	// audio-vasual
+	        	cell1.innerHTML = typeStr[obj[i].inf_type];
+	        	cell2.innerHTML = obj[i].inf_write;
+	        	cell3.innerHTML = obj[i].datetime;
+	        	cell4.innerHTML = "<button onclick='viewV("+i+")'>"+lanStr[0]+"</button>";
+	        }else if(obj[i].inf_type.includes("0")){
+	        	// text
+	        	cell1.innerHTML = typeStr[obj[i].inf_type];
+	        	cell2.innerHTML = obj[i].inf_write;
+	        	cell3.innerHTML = obj[i].datetime;
+	        	cell4.innerHTML = "<button onclick='textinfUpdate("+i+","+obj[i].inf_type+")'>"+lanStr[1]+"</button>";
+	        }
+	        else if(obj[i].inf_type.includes("4")){
+	       	  // mood
+	        	cell1.innerHTML = typeStr[obj[i].inf_type];
+	        	cell2.innerHTML = obj[i].inf_write;
+	        	cell3.innerHTML = obj[i].datetime;
+	        	cell4.innerHTML = "<button onclick='textinfUpdate("+i+","+obj[i].inf_type+")'>"+lanStr[1]+"</button>";
+	        }
+	        else if(obj[i].inf_type.includes("5")){
+	        	// sleep
+	        	cell1.innerHTML = typeStr[obj[i].inf_type];
+	        	cell2.innerHTML = obj[i].inf_write;
+	        	cell3.innerHTML = obj[i].datetime;
+	        	cell4.innerHTML = '<input type="datetime-local" id="sleeptime'+i+'" name="meeting-time" value="" min="" max=""> <button onclick="sleepUploader(5,'+i+')">'+lanStr[1]+'</button>';
+	        	sleepSetting(i);
+	        }else if(obj[i].inf_type.includes("8")){
+	        	// get-up
+	        	cell1.innerHTML = typeStr[obj[i].inf_type];
+	        	cell2.innerHTML = obj[i].inf_write;
+	        	cell3.innerHTML = obj[i].datetime;
+	        	cell4.innerHTML = '<input type="datetime-local" id="sleeptime'+i+'" name="meeting-time" value="" min="" max=""> <button onclick="sleepUploader(8,'+i+')">'+lanStr[1]+'</button>';
+	        	sleepSetting(i);
+	        }
+        }else if(x.value == 4){
+        	// self-scale
+        	cell1.innerHTML = typeStr[9]+obj[i].asrm;
+        	cell2.innerHTML = typeStr[10]+obj[i].dass;
+        	cell3.innerHTML = obj[i].datetime;
+        }
+			}
+		}else{
+			swal(lanStrNot[0], lanStrNot[1], "error");
+		}
+	};
+	//聽歷史語音
+	function viewA(count){
+		var table=document.getElementById('table');
+  	console.log(table.rows[count+1].cells[1].innerHTML);
+  	URLlink = table.rows[count+1].cells[1].innerHTML;
+		window.open('http://140.116.82.102:8080/app_webpage/sql/SER/wav/'+URLlink, '_blank');
+  }
+  //看歷史影片
+	function viewV(count){
+		var table=document.getElementById('table');
+  	console.log(table.rows[count+1].cells[1].innerHTML);
+  	URLlink = table.rows[count+1].cells[1].innerHTML;
+		window.open('http://140.116.82.102:8080/app_webpage/sql/upload_video/'+URLlink, '_blank');
+  }
+  // 更新資料
+  function textinfUpdate(count,types){
+  // 	var lanStrtest = ['要更新這筆資料的內容嗎?','要更新這筆資料的內容嗎?(請輸入0~6)'];
+		// var lanStrsuccess = ["上傳成功!","多收集資料可以讓自己變得更好"];
+		// var lanStrfail = ["上傳失敗!","請稍後在試"];
+  //   var lanStrerror = ["Oh noes!", "內容不能為空哦!"];
+    var lanStrtest = ['Do you want to update the content of this profile?','Would you like to update the content of your input profile? (Enter 0~6)'];
+		var lanStrsuccess = ["Uploaded successfully!", "Collecting more information can make yourself better"];
+		var lanStrfail = ["Upload failed!","Please try later"];
+    var lanStrerror = ["Oh noes!", "The content cannot be empty!"];
+
+    //抓取日期
+  	var table=document.getElementById('table');
+  	var date = table.rows[count+1].cells[2].innerHTML;
+  	console.log(table.rows[count+1].cells[2].innerHTML);
+
+  	//查看type
+  	console.log(types);
+  	//設定輸入種類
+  	if(types == 4){
+  		swtext = lanStrtest[1];
+  	}else{
+  		swtext = lanStrtest[0];
+  	}
+  	//更新
+  	swal({
+		  	text: swtext,
+		  	content: "input",
+		  	button: {
+		    text: "Search!",
+		    closeModal: false,
+		  },
+		})
+		.then(name => {
+		  	if (!name) throw null;
+		  	//取得帳號資訊
+		 	var account = getCookie('account');
+			//更新文字資料
+			if (types == 0){
+				//文字
+				var jsonData = $.ajax({
+					    type: "POST",
+					    url: "sql/updateInf.php",
+					    data: {at: account, date: date, type: types, write: name},
+					    dataType: "json",
+				        async: false
+				}).responseText;
+				var obj = eval("(" + jsonData + ")");
+			}else if(types == 4){
+				//每日心情
+				if (parseInt(name) <= 6 && parseInt(name)!= null){
+					var jsonData = $.ajax({
+						    type: "POST",
+						    url: "sql/updateInf.php",
+						    data: {at: account, date: date, type: types, write: name},
+						    dataType: "json",
+					        async: false
+					}).responseText;
+					var obj = eval("(" + jsonData + ")");
+				}else{
+					swal(lanStrfail[0], lanStrfail[1], "error");
+				}
+			}
+			console.log('success='+obj.success);
+			//成功區
+		 	if (obj.success == '1'){
+			  	swal.stopLoading();
+	    		swal.close();
+	    		swal(lanStrsuccess[0], lanStrsuccess[1], "success");
+	    	//失敗區
+		 	}else {
+		 		swal.stopLoading();
+	    		swal.close();
+	    		swal(lanStrfail[0], lanStrfail[1], "error");
+		 	}
+		})
+		.catch(err => {
+		  	if (err) {
+		    	swal(lanStrerror[0], lanStrerror[1], "error");
+		  	} else {
+		    	swal.stopLoading();
+		    	swal.close();
+		  	}
+		});
+  };
+  //起床與睡眠時間上傳
+	function sleepUploader(type, count){
+		//抓取上傳日期
+		var table=document.getElementById('table');
+  	var date = table.rows[count+1].cells[2].innerHTML;
+  	// console.log(table.rows[count+1].cells[2].innerHTML);
+
+		//抓取更新的睡眠時間
+		var dateField = document.getElementById("sleeptime"+count);
+		var sleeptime = dateField.value;
+		sleeptime = sleeptime.replace(/T/g, " ");
+		console.log('sleeptime='+sleeptime);
+
+		infUpdate(type, sleeptime, date);
+	}
+	//睡眠時間設置
+	function sleepSetting(count){
+		var dateField = document.getElementById("sleeptime"+count);
+		
+		// 預設今天
+		var d = new Date();
+		date = new Date(d.setHours(d.getDate() + 8));
+		dateField.setAttribute("value", date.toISOString().slice(0, 16));
+		// 最大到明天
+		date = new Date(d.setHours(d.getDate() + 8));
+		date = new Date(d.setDate(d.getDate() + 1));
+		// console.log('dateNew='+date);
+		dateField.setAttribute("max", date.toISOString().slice(0, 16));
+	}
+
+	//修改表單資料庫
+	function infUpdate(types, write, date){
+		//取得帳號資料
+		var account = getCookie('account');
+
+		var jsonData = $.ajax({
+			    type: "POST",
+			    url: "sql/updateInf.php",
+			    data: {at: account, date: date, type: types, write: write},
+			    dataType: "json",
+		        async: false
+		}).responseText;
+		var obj = eval("(" + jsonData + ")");
+		console.log('obj.success='+obj.success);
+		lanStr = ["Uploaded successfully!", "Upload failed!", "Collect more information to make yourself better!", "Internet connection failed, try again later!"];
+		//成功區
+	 	if (obj.success == '1'){
+	   		swal(lanStr[0],lanStr[2], "success");
+	   	//失敗區
+	 	}else {
+	    	swal(lanStr[1],lanStr[3], "error");
+	 	}
+	}
+	// 連接區
+	function toLogin(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/login_en.html");
+	};
+	function tocreateAccount(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/createAcc_en.html");
+	};
+
+	function toforgotPassword(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/forgotPassword_en.html");
+	};
+
+	function dataCollection(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/dataCollection_en.html");
+	};
+
+	function toPoint(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/Point_en.html");
+	};
+
+	function toFeedback(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/Feedback_en.html");
+	};
+	function toDatalist(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/dataList_en.html");
+	};
+	function toSetting(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/Setting_en.html");
+	};
+	
+	// cookie 區-------------------------------------------
+	//獲取cookie
+	function getCookie(cname) {
+	    var name = cname + "=";
+	    var ca = document.cookie.split(';');
+	    for(var i=0; i<ca.length; i++) {
+	        var c = ca[i];
+	        while (c.charAt(0)==' ') c = c.substring(1);
+	        if (c.indexOf(name) != -1) return c.substring(name.length, c.length);
+	    }
+	    return "";
+	};
+	//清除cookie  
+	function delCookie(name) {
+	    var exp = new Date();
+	    exp.setTime(exp.getTime() - 1);
+	    var cval=getCookie(name);
+	    if(cval!=null)
+        document.cookie= name + "="+cval+";expires="+exp.toGMTString();
+	};
+	//設定cookie
+	function setCookie(cname, cvalue, exdays) {
+	    var d = new Date();
+	    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+	    var expires = "expires="+d.toUTCString();
+	    document.cookie = cname + "=" + cvalue + "; " + expires;
+	}
+	//檢查登入狀況是否逾期
+	function checkLogin() {
+		// var lanStr = ['登入逾期了!','請重新登入'];
+		var lanStr = ['Login expired!','Please login again'];
+		var timestamp = (new Date()).valueOf();
+		// alert(timestamp);
+		if (timestamp >= getCookie('d')) {
+
+			delCookie('account');
+			delCookie('d');
+			swal(lanStr[0],lanStr[1], "warning");
+			setTimeout(function(){
+				toLogin();
+			}, 3000);
+		}else{
+			delCookie('d');
+			setCookie('d', timestamp+(10*60*1000));
+		}
+	};
+	</script>
+	<!--slido-->
+
+  <script type="text/javascript">
+  	// 表格區-------------------------------------------
+    function js(){
+      jQuery(document).ready(function ($) {
+        $('#checkbox').change(function(){
+          setInterval(function () {
+              moveRight();
+          }, 3000);
+        });
+        
+        var slideCount = $('#slider ul li').length;
+        var slideWidth = $('#slider ul li').width();
+        var slideHeight = $('#slider ul li').height();
+        var sliderUlWidth = slideCount * slideWidth;
+        
+        $('#slider').css({ width: slideWidth, height: slideHeight });
+        
+        $('#slider ul').css({ width: sliderUlWidth, marginLeft: - slideWidth });
+        
+          $('#slider ul li:last-child').prependTo('#slider ul');
+
+          function moveLeft() {
+              $('#slider ul').animate({
+                  left: + slideWidth
+              }, 200, function () {
+                  $('#slider ul li:last-child').prependTo('#slider ul');
+                  $('#slider ul').css('left', '');
+              });
+          };
+
+          function moveRight() {
+              $('#slider ul').animate({
+                  left: - slideWidth
+              }, 200, function () {
+                  $('#slider ul li:first-child').appendTo('#slider ul');
+                  $('#slider ul').css('left', '');
+              });
+          };
+
+          $('a.control_prev').click(function () {
+              moveLeft();
+          });
+
+          $('a.control_next').click(function () {
+              moveRight();
+          });
+        });
+    }
+  </script>
+	<style>
+		table {
+		  	border: 0;
+		  	border-collapse: collapse;
+		  	border-radius: 8px;
+		  	width: 100%;
+		}
+		/*th {
+		  	border: solid 1px #5ceffe;
+		  	padding: 16px 8px;
+		}*/
+		td {
+		  	border: solid 1px #5ceffe;
+		  	text-align: center;
+		  	padding: 8px;
+		  	color: #757575;
+		}
+	</style>
+	<body>
+		<title>"Mood APP collects records"</title><BR>
+		<h2>History</h2>
+		<div>
+			<select id="list">
+				<option value="0">All data</option>
+				<option value="1">text、audio-visual</option>
+				<option value="2">Sleep state</option>
+				<option value="3">Daily mood</option>
+				<option value="4">Weekly Scale</option>
+			</select>
+			<input  class="button black" id="search" type="button" runat="server"  value="Search" onclick="dataSearch()" />
+		</div>
+
+		<div class="container">
+          	<div class="card" id="transactions">
+            	<div class="title">
+              		<h2>Data</h2>
+              		<p class="subtitle"></p>
+            	</div>
+            	<div id="tablehere" class="content">
+              		<table id="table" class="table">
+              		</table>
+            	</div>
+          	</div>
+        </div>
+
+		<div class="title2">
+		    	<table id="table2" width="100%">
+			   	<th>
+			   		<button type="button" id="page1" onclick="dataCollection()"><img src="image/page1.png" style="width:50%;height:20%"></button>
+			   	</th>
+			   	<th>
+					<button type="button" id="page2" onclick="toPoint()"><img src="image/page2.png" style="width:50%;height:20%"></button>
+				</th>
+			   	<th>
+					<button type="button" id="page3" onclick="toFeedback()"><img src="image/page3.png" style="width:50%;height:20%"></button>
+				</th>
+			   	<th>
+					<button type="button" id="page4" onclick=""><img src="image/page4i.png" style="width:50%;height:20%"></button>
+				</th>
+			   	<th>
+					<button type="button" id="page5" onclick="toSetting()"><img src="image/page5.png" style="width:50%;height:20%"></button>
+				</th>
+				</table>
+		    </div>
+	</body>
+</html>
+

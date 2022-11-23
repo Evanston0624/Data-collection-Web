@@ -1,0 +1,323 @@
+<html>
+	<meta charset="utf-8">
+	<link href="//vjs.zencdn.net/7.3.0/video-js.min.css" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script src="//vjs.zencdn.net/7.3.0/video.min.js"></script>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <!-- <link href="app_style/style.css" rel="stylesheet"> -->
+    <!-- <script type="text/javascript" src="data/data.js"></script> -->
+
+	<script language="javascript">
+	window.onload = function () {
+;		//確定登入狀態
+		checkLogin();
+
+		//取得帳號
+		var account = getCookie('account');
+		// alert(account);
+		//查詢使用者的植物、點數
+		var jsonData = $.ajax({
+			    type: "POST",
+			    url: "sql/checkAccountInf.php",
+			    data: {at: account},
+			    dataType: "json",
+		        async: false
+		}).responseText;
+		var obj = eval("(" + jsonData + ")");
+		var data = obj[0].data;
+
+		dropLinechart();
+	};
+	
+	//時間格式轉換
+	function dateTranslate(timeS){
+		var date = timeS.getFullYear()+
+			"-"+(timeS.getMonth()+1)+
+          	"-"+timeS.getDate()+
+          	" "+timeS.getHours()+
+          	":"+timeS.getMinutes()+
+          	":"+timeS.getSeconds();
+		return date;
+	}
+	// 折線圖
+	function dropLinechart(){
+		//取得帳號
+		var account = getCookie('account');
+		//取得當前日期
+		var timestamp = (new Date()).valueOf();
+		var nowTime = new Date(timestamp);
+		var nowdate = dateTranslate(nowTime);
+		// console.log("nowdate:"+nowdate);
+
+		var timestamp = timestamp - (14*24*60*60*1000);
+		var lastTime = new Date(timestamp);
+		var lastdate = dateTranslate(lastTime);
+		// console.log("lastdate:"+lastdate);
+		//Sleep time
+		//取得使用者資料
+        var jsonData = $.ajax({
+                type: "POST",
+                url: "sql/SelectinfoS.php",
+                data: {at: account, startdate: lastdate ,enddate: nowdate},
+                dataType: "json",
+                async: false
+            }).responseText;
+        obj2 = eval("(" + jsonData + ")");
+
+        //建立時間搓
+	    var timecount = 0;
+	    var timestr = "";
+        for(i=1;i<obj2.length;i++){
+          	if(obj2[i].infdate!=timestr){
+            	timestr = obj2[i].infdate;
+            	timecount++;
+          	}
+        }
+		//建立折線圖資料
+        var now = "";
+        var nowIndex = -1; 
+        var costtime_distance = new Array(timecount);
+        for(i=1;i<obj2.length;i++){
+        	//防止重複填寫的日子
+          	if(obj2[i].infdate != now){
+          		//將當前日期設為now
+          		nowIndex++;
+          		console.log("nowIndex:"+nowIndex);
+            	now = obj2[i].infdate;
+	            costtime_distance[nowIndex] = new Array(4);
+	            costtime_distance[nowIndex][0] = obj2[i].infdate;
+	            costtime_distance[nowIndex][1] = 0;
+	            costtime_distance[nowIndex][2] = 0;
+	            costtime_distance[nowIndex][3] = 0;
+	            
+            	if (nowIndex > 0){//睡覺時間>12:00
+              		if (costtime_distance[nowIndex-1][2] > 12){
+                		costtime_distance[nowIndex-1][3] = parseInt(Math.abs(costtime_distance[nowIndex-1][1]+(24-costtime_distance[nowIndex-1][2])));
+              		}else{//睡覺時間>12:00
+                		costtime_distance[nowIndex-1][3] = parseInt(Math.abs(costtime_distance[nowIndex-1][1]-costtime_distance[nowIndex-1][2]));
+              		}
+            	}
+          	}if (obj2[i].type == '5'){//起床
+            	costtime_distance[nowIndex][1] = parseInt(obj2[i].infh)+(parseInt(obj2[i].infm)*0.1)/6;
+          	}if (obj2[i].type == '8'){//睡覺
+          	  	costtime_distance[nowIndex][2] = parseInt(obj2[i].infh)+(parseInt(obj2[i].infm)*0.1)/6;
+          	}if (i == (obj2.length)-1){
+            	if (parseInt(costtime_distance[nowIndex][2] > 12)){
+            	  osttime_distance[nowIndex][3] = Math.abs(costtime_distance[nowIndex][1]+(24-costtime_distance[nowIndex][2]));
+            	}else{
+            	  costtime_distance[nowIndex][3] = Math.abs(costtime_distance[nowIndex][1]-costtime_distance[nowIndex][2]);
+            	}
+          	}
+        }
+        drawChart(costtime_distance);
+
+        // Daily mood
+        //取得使用者資料
+        var jsonData = $.ajax({
+                type: "POST",
+                url: "sql/SelectinfoM.php",
+                data: {at: account, startdate: lastdate ,enddate: nowdate},
+                dataType: "json",
+                async: false
+            }).responseText;
+        obj2 = eval("(" + jsonData + ")");
+
+        console.log("obj2.length:"+obj2.length);
+        //建立時間搓
+	    var timecount = 0;
+	    var timestr = "";
+        for(i=1;i<obj2.length;i++){
+          	if(obj2[i].infdate!=timestr){
+            	timestr = obj2[i].infdate;
+            	timecount++;
+          	}
+        }
+        
+        //建立折線圖資料
+        var now = "";
+        var nowIndex = -1;
+        var costtime_distance = new Array(timecount);
+        for(i=0;i<obj2.length;i++){
+          	if(obj2[i].infdate!=now){
+	            nowIndex++;
+	            now = obj2[i].infdate;
+	            costtime_distance[nowIndex] = new Array(2);
+	            costtime_distance[nowIndex][0] = obj2[i].infdate;
+	            costtime_distance[nowIndex][1] = 0;
+          	}
+            costtime_distance[nowIndex][1] = parseInt(obj2[i].infdata);
+        }
+        drawChart2(costtime_distance);
+	}
+	// 連接區
+	function toLogin(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/login_en.html");
+	};
+	function tocreateAccount(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/createAcc_en.html");
+	};
+
+	function toforgotPassword(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/forgotPassword_en.html");
+	};
+
+	function dataCollection(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/dataCollection_en.html");
+	};
+
+	function toPoint(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/Point_en.html");
+	};
+
+	function toFeedback(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/Feedback_en.html");
+	};
+	function toDatalist(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/dataList_en.html");
+	};
+	function toSetting(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/Setting_en.html");
+	};
+	
+	// cookie 區-------------------------------------------
+	//獲取cookie
+	function getCookie(cname) {
+	    var name = cname + "=";
+	    var ca = document.cookie.split(';');
+	    for(var i=0; i<ca.length; i++) {
+	        var c = ca[i];
+	        while (c.charAt(0)==' ') c = c.substring(1);
+	        if (c.indexOf(name) != -1) return c.substring(name.length, c.length);
+	    }
+	    return "";
+	};
+	//清除cookie  
+	function delCookie(name) {
+	    var exp = new Date();
+	    exp.setTime(exp.getTime() - 1);
+	    var cval=getCookie(name);
+	    if(cval!=null)
+        document.cookie= name + "="+cval+";expires="+exp.toGMTString();
+	};
+	//設定cookie
+	function setCookie(cname, cvalue, exdays) {
+	    var d = new Date();
+	    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+	    var expires = "expires="+d.toUTCString();
+	    document.cookie = cname + "=" + cvalue + "; " + expires;
+	}
+	//檢查登入狀況是否逾期
+	function checkLogin() {
+		// var lanStr = ['登入逾期了!','請重新登入'];
+		var lanStr = ['Login expired!','Please login again'];
+		var timestamp = (new Date()).valueOf();
+		// alert(timestamp);
+		if (timestamp >= getCookie('d')) {
+
+			delCookie('account');
+			delCookie('d');
+			swal(lanStr[0],lanStr[1], "warning");
+			setTimeout(function(){
+				toLogin();
+			}, 3000);
+		}else{
+			delCookie('d');
+			setCookie('d', timestamp+(10*60*1000));
+		}
+	};
+	</script>
+  	<script type="text/javascript">
+  	// 折線圖區域
+    google.charts.load('current', {'packages':['line']});
+    google.charts.setOnLoadCallback(drawChart);
+    // Sleep time
+    function drawChart(array) {
+      	var data = new google.visualization.DataTable();
+      	// var lanStrChart = ['天', '起床時間','睡覺時間', '睡眠時長', '睡眠狀態(小時)'];
+      	var lanStrChart = ['Day', 'wake up time','sleep time', 'sleep duration', 'sleep state(Hours)'];
+      	data.addColumn('string', lanStrChart[0]);
+      	data.addColumn('number', lanStrChart[1]);
+      	data.addColumn('number', lanStrChart[2]);
+      	data.addColumn('number', lanStrChart[3]);
+      	data.addRows(array);
+
+    	var formatNumer = new google.visualization.NumberFormat({pattern: 'decimal'});
+    	formatNumer.format(data, 1);
+      	var options = {
+          	chart: {
+            	title: lanStrChart[4],
+            	subtitle: '',
+          	}
+
+      	};
+
+      	var chart = new google.charts.Line(document.getElementById('linechart'));
+      	chart.draw(data, google.charts.Line.convertOptions(options));
+    }
+    // Daily mood
+    function drawChart2(array) {
+    	var data = new google.visualization.DataTable();
+      	// var lanStrChart = ['天','每日心情','心情分數(0~6)'];
+      	var lanStrChart = ['Day','daily mood', 'Mood Score(0~6)'];
+	    var data = new google.visualization.DataTable();
+	    data.addColumn('string', lanStrChart[0]);
+	    data.addColumn('number', lanStrChart[1]);
+	    data.addRows(array);
+
+    	var formatNumer = new google.visualization.NumberFormat({pattern: 'decimal'});
+    	formatNumer.format(data, 1);
+      	var options = {
+          	chart: {
+            	title: lanStrChart[2],
+            	subtitle: ''
+          	}
+      	};
+      var chart = new google.charts.Line(document.getElementById('linechart2'));
+      chart.draw(data, google.charts.Line.convertOptions(options));
+    }
+  </script>
+	<style>
+
+	</style>
+	<body>
+		<title>Mood APP collects data statistics</title><BR>
+		<div>
+			<div class="card" id="chart">
+		            	<div class="title">
+		              		<h2>Life style and rest line chart</h2>
+		            	</div>
+		            	<div class="content">
+		              		<canvas id="sales_ratio_chart" width="1" height="1"></canvas>
+		              		<div id="linechart" style="height: 40%;width: 100%;"></div>
+		            	</div>
+		            	<div class="content">
+		              		<canvas id="sales_ratio_chart" width="1" height="1"></canvas>
+		              		<div id="linechart2" style="height: 40%;width: 100%;"></div>
+		            	</div>
+          		</div>
+		</div>
+
+		<div class="content">
+		    <table width="100%">
+		   	<th>
+		   		<button type="button" id="page1" onclick="dataCollection()"><img src="image/page1.png" style="width:50%;height:20%"></button>
+		   	</th>
+		   	<th>
+				<button type="button" id="page2" onclick="toPoint()"><img src="image/page2.png" style="width:50%;height:20%"></button>
+			</th>
+		   	<th>
+				<button type="button" id="page3" onclick=""><img src="image/page3i.png" style="width:50%;height:20%"></button>
+			</th>
+		   	<th>
+				<button type="button" id="page4" onclick="toDatalist()"><img src="image/page4.png" style="width:50%;height:20%"></button>
+			</th>
+		   	<th>
+				<button type="button" id="page5" onclick="toSetting()"><img src="image/page5.png" style="width:50%;height:20%"></button>
+			</th>
+			</table>
+		</div>
+	</body>
+</html>
+

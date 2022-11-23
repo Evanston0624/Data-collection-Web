@@ -1,0 +1,140 @@
+<html>
+	<meta charset="utf-8">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <!-- <script type="text/javascript" src="data/data.js"></script> -->
+	<script language="javascript">
+	function NewAccount(){
+		//取得輸入值
+		const accountElement = document.getElementsByName('account');
+  		const account = accountElement[0].value;
+  		const passwordElement = document.getElementsByName('password');
+  		const password = passwordElement[0].value;
+  		const cpasswordElement = document.getElementsByName('cpassword');
+  		const cpassword = cpasswordElement[0].value;
+  		const nameElement = document.getElementsByName('name');
+  		const name = nameElement[0].value;
+  		const emailElement = document.getElementsByName('email');
+  		const email = emailElement[0].value;
+  		const mobileElement = document.getElementsByName('mobile');
+  		const mobile = mobileElement[0].value;
+  		const mednumElement = document.getElementsByName('mednum');
+  		const mednum = mednumElement[0].value;
+  		var backorappElement = document.getElementsByName('backorapp');
+  		// var backorapp = backorappElement[0].value;
+  		for (var i=0; i<backorappElement.length; i++) {
+			if (backorappElement[i].checked) {
+			  var backorapp = i;
+			  break;
+			}
+		}
+		// confirm(backorapp);
+		// confirm(account.length);
+		//比對帳號資料
+		var jsonData = $.ajax({
+			    type: "POST",
+			    url: "sql/checkAccount.php",
+			    data: {at: account},
+			    dataType: "json",
+		        async: false
+		}).responseText;
+		var obj = eval("(" + jsonData + ")");
+		//判斷帳號是否重複
+		if (obj[0].success == '1'){
+			//判斷帳號長度
+			if (account.length>= 4 && account.length <=12){
+				//判斷密碼長度
+				if(password.length>= 4 && password.length <=12){
+					//判斷兩個密碼是否相等
+					if (password == cpassword){
+						//判斷名子長度>1
+						if (name.length>=1){
+							//判斷mail長度>3 且 包含@
+							if (email.length>=3 && email.indexOf('@') != -1){
+								//判斷電話號碼長度> 6
+								if (mobile.length>=6){
+									//創建後臺帳號
+									if (backorapp == 0){
+										var checknum = 0;
+										var jsonData = $.ajax({
+									        type: "POST",
+									        url: "sql/RegistUser.php",
+									        data: {ckn: checknum, at: account, pw: password, name: name, email: email, mobile: mobile},
+									        dataType: "json",
+									        async: false
+								    	}).responseText;
+								    	var obj1 = eval("(" + jsonData + ")");
+									//創建APP帳號
+									}else if(backorapp == 1){
+										//有病歷號時
+										if (mednum != ''){
+											if (mednum.length==8){
+												var checknum = 1;
+												var jsonData = $.ajax({
+											        type: "POST",
+											        url: "sql/RegistUser.php",
+											        data: {ckn: checknum, at: account, pw: password, name: name, email: email, mobile: mobile, mednum: mednum},
+											        dataType: "json",
+											        async: false
+											    }).responseText;
+									    		var obj1 = eval("(" + jsonData + ")");
+									    	}else{
+									    		confirm("如果您擁有病歷號，請確認病例號長度共為8碼\n沒有病歷號的話請確認病例號為空");
+											}
+										//無病例號時
+										}else if(mednum == ''){
+											var checknum = 2;
+											var jsonData = $.ajax({
+											        type: "POST",
+											        url: "sql/RegistUser.php",
+											        data: {ckn: checknum, at: account, pw: password, name: name, email: email, mobile: mobile},
+											        dataType: "json",
+											        async: false
+											    }).responseText;
+									    	var obj1 = eval("(" + jsonData + ")");
+										}
+									}
+								    if (obj1[0].success == '1' ||obj1[0].success == null){
+								    	confirm("創建帳號成功");
+								    }else{
+								    	confirm("創建帳號失敗 請稍後再試");
+								    }
+								}else{
+									confirm("請輸入正確的電話號碼");
+								}
+							}else{
+								confirm("請輸入正確的E-mail");
+							}
+						}else{
+							confirm("請輸入正確的名子");
+						}
+			    	}else{
+			    		confirm("兩次密碼輸入的不同喔");
+			    	}
+			    }else{
+			    	confirm("密碼長度需大於4個字元，小於12個字元");
+			    }
+		    }else{
+		    	confirm("帳號長度需大於4個字元，小於12個字元");
+		    }
+		}else{
+			confirm("帳號重複了呢");
+		}
+		
+		
+	}
+	</script>
+	<FORM METHOD=POST ACTION="auth.php">
+		<CENTER>
+			Account: <INPUT TYPE="text" NAME="account"><BR>
+			Password: <INPUT TYPE="text" NAME="password"><BR>
+			Confirm password again: <INPUT TYPE="text" NAME="cpassword"><BR>
+			Name: <INPUT TYPE="text" NAME="name"><BR>
+			E-mail: <INPUT TYPE="text" NAME="email"><BR>
+			Mobile: <INPUT TYPE="text" NAME="mobile"><BR>
+			Medical number(選填): <INPUT TYPE="text" NAME="mednum"><BR>
+		 	創建後臺帳號 <INPUT TYPE="radio" NAME="backorapp" value="0"checked="true">
+			創建APP帳號 <INPUT TYPE="radio" NAME="backorapp" value="1"><BR>
+		<INPUT TYPE="button" onclick="NewAccount()" value="createAccount">
+		</CENTER>
+	</FORM>
+</html>

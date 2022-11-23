@@ -1,0 +1,416 @@
+
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>查詢</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script type="text/javascript" src="data/data.js"></script>
+    <link rel=stylesheet type="text/css" href="data/data.css">
+    <link rel=stylesheet type="text/css" href="slidecss/slide.css">
+
+    <script type="text/javascript">
+      function load(){
+        var sn = document.getElementById('sn');
+        sn.value = window.name;
+
+        var sd = document.getElementById('startdate');
+        var ed = document.getElementById('enddate');
+        var Today = new Date();
+        var date = "";
+        
+        if((Today.getMonth()+1)<10){
+          if(Today.getDate()<10){
+            date = Today.getFullYear()+"-0"+(Today.getMonth()+1)+"-0"+(Today.getDate());
+          }
+          else{
+            date = Today.getFullYear()+"-0"+(Today.getMonth()+1)+"-"+(Today.getDate());
+          }
+        }
+        else{
+          if(Today.getDate()<10){
+            date = Today.getFullYear()+"-"+(Today.getMonth()+1)+"-0"+(Today.getDate());
+          }
+          else{
+            date = Today.getFullYear()+"-"+(Today.getMonth()+1)+"-"+(Today.getDate());
+          }
+        }
+
+        sd.value = date;
+        ed.value = date;
+      }
+    </script>
+    <!---->
+    <script type="text/javascript">
+      obj={};
+      obj2={};
+      // This example creates a 2-pixel-wide red polyline showing the path of
+      // the first trans-Pacific flight between Oakland, CA, and Brisbane,
+      // Australia which was made by Charles Kingsford Smith.
+      function initMap() {
+        var Today = new Date();
+        var account = document.getElementById('sn').value;
+        var startdate = document.getElementById("startdate").value;
+        var enddate = document.getElementById("enddate").value;
+        if(startdate!="" && enddate!=""){
+          var result = enddate.split("-");
+          result[2] = parseInt(result[2])+1;
+          enddate = result[0]+"-"+result[1]+"-"+result[2];
+        }else if(startdate!="" && enddate==""){//假設有選startdate而沒選endate，就是startdate到當天
+          if((Today.getMonth()+1)<10){
+            if(Today.getDate()<10){
+              enddate = Today.getFullYear()+"-0"+(Today.getMonth()+1)+"-0"+(Today.getDate()+1);
+            }
+            else{
+              enddate = Today.getFullYear()+"-0"+(Today.getMonth()+1)+"-"+(Today.getDate()+1);
+            }
+          }
+          else{
+            if(Today.getDate()<10){
+              enddate = Today.getFullYear()+"-"+(Today.getMonth()+1)+"-0"+(Today.getDate()+1);
+            }
+            else{
+              enddate = Today.getFullYear()+"-"+(Today.getMonth()+1)+"-"+(Today.getDate()+1);
+            }
+          }
+        }else{//如果兩個日期都沒選，就是當天日期
+          if((Today.getMonth()+1)<10){
+            if(Today.getDate()<10){
+              startdate = Today.getFullYear()+"-0"+(Today.getMonth()+1)+"-0"+Today.getDate();
+              if(Today.getDate()==9)
+              	enddate = Today.getFullYear()+"-"+(Today.getMonth()+1)+"-"+(Today.getDate()+1);
+              else
+              	enddate = Today.getFullYear()+"-"+(Today.getMonth()+1)+"-0"+(Today.getDate()+1);
+            }
+            else{
+              startdate = Today.getFullYear()+"-0"+(Today.getMonth()+1)+"-"+Today.getDate();
+              enddate = Today.getFullYear()+"-0"+(Today.getMonth()+1)+"-"+(Today.getDate()+1);
+            }
+          }
+          else{
+            if(Today.getDate()<10){
+              startdate = Today.getFullYear()+"-"+(Today.getMonth()+1)+"-0"+Today.getDate();
+              if(Today.getDate()==9)
+              	enddate = Today.getFullYear()+"-"+(Today.getMonth()+1)+"-"+(Today.getDate()+1);
+              else
+              	enddate = Today.getFullYear()+"-"+(Today.getMonth()+1)+"-0"+(Today.getDate()+1);
+            }
+            else{
+              startdate = Today.getFullYear()+"-"+(Today.getMonth()+1)+"-"+Today.getDate();
+              enddate = Today.getFullYear()+"-"+(Today.getMonth()+1)+"-"+(Today.getDate()+1);
+            }
+          }
+        }
+
+        //Get GPS JsonData from SQL
+        var account = window.name;
+        var acc_result = AcctoMednum(account);
+        if (acc_result != ""){
+          account = acc_result;
+        }
+        var jsonData = $.ajax({
+                type: "POST",
+                url: "sql/Selectgps 1.php",
+                data: {at: account, startdate: startdate ,enddate: enddate},
+                dataType: "json",
+                async: false
+            }).responseText;
+        var obj = eval("(" + jsonData + ")");
+
+        //Get Element Table
+        var table = document.getElementById("table");
+        table.remove();
+        var tablehere =document.getElementById("tablehere");
+        table = document.createElement("table");
+        table.setAttribute("id","table");
+        table.className = "table";
+        tablehere.appendChild(table);
+
+        //Set GPS Data to Table
+        var flightPlanCoordinates = [];
+
+        var row = table.insertRow(0);
+        var cell1 = row.insertCell(0);
+        var cell2 = row.insertCell(1);
+        var cell3 = row.insertCell(2);
+        var cell4 = row.insertCell(3);
+        var cell5 = row.insertCell(4);
+        // var cell6 = row.insertCell(5);
+        // var cell7 = row.insertCell(6);
+        cell1.innerHTML = "紀錄筆數";
+        cell2.innerHTML = "GPS接收涵蓋時間(0~1)";
+        cell3.innerHTML = "移動距離(公尺)";
+        cell4.innerHTML = "平均速度(公尺/秒)";
+        cell5.innerHTML = "-日期-";
+        // cell6.innerHTML = "行走時間(秒)";
+        // cell7.innerHTML = "紀錄時間";
+
+		//記錄幾天資料
+        //建立表格
+        for(i=1;i<obj.length;i++){
+          var row = table.insertRow(i);
+          var cell1 = row.insertCell(0);
+          var cell2 = row.insertCell(1);
+          var cell3 = row.insertCell(2);
+          var cell4 = row.insertCell(3);
+          var cell5 = row.insertCell(4);
+          // var cell6 = row.insertCell(5);
+          // var cell7 = row.insertCell(6);
+          cell1.innerHTML = obj[i].count;
+          cell2.innerHTML = parseFloat((obj[i].costtime)/86400).toFixed(2);
+          cell3.innerHTML = parseFloat(obj[i].distance).toFixed(3);
+          cell4.innerHTML = parseFloat(obj[i].speed).toFixed(3);
+          cell5.innerHTML = obj[i].datetime;
+          // cell6.innerHTML = (parseInt(obj[i].costtime)/1000);
+          // cell7.innerHTML = obj[i].formatetime;
+        }
+        //Get GPS JsonData from SQL
+        var jsonData2 = $.ajax({
+                type: "POST",
+                url: "sql/Selectgps.php",
+                data: {at: account, startdate: startdate ,enddate: enddate},
+                dataType: "json",
+                async: false
+            }).responseText;
+        var obj2 = eval("(" + jsonData2 + ")");
+
+        //建立Map軌跡
+    var timecount = 0;
+    var timestr = "";
+        for(i=1;i<obj2.length;i++){
+          var ilat = parseFloat(obj2[i].startlat);
+          var ilng = parseFloat(obj2[i].startlng);
+          var ielat = parseFloat(obj2[i].endlat);
+          var ielng = parseFloat(obj2[i].endlng);
+          flightPlanCoordinates.push({lat: ilat, lng: ilng});
+          flightPlanCoordinates.push({lat: ielat, lng: ielng});
+          if(obj2[i].formatetime.split(" ")[0]!=timestr){
+            timestr = obj2[i].formatetime.split(" ")[0];
+      timecount++;
+          }
+        }
+        
+        var a = parseInt(obj2.length/2);
+        totallat = obj2[a].startlat;
+        totallng = obj2[a].startlng;
+        //Set GPS Data to Google Map
+        var map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 16,
+          center: {lat: parseFloat(totallat), lng: parseFloat(totallng)},
+          mapTypeId: 'terrain'
+        });
+        var flightPath = new google.maps.Polyline({
+          path: flightPlanCoordinates,
+          geodesic: true,
+          strokeColor: '#FF0000',
+          strokeOpacity: 1.0,
+          strokeWeight: 1
+        });
+
+        flightPath.setMap(map);
+
+        //建立折線圖資料
+        var now = "";
+        var nowIndex = -1; 
+        var costtime_distance = new Array(timecount);
+        var costtime_distance2 = new Array(timecount);
+        for(i=1;i<obj2.length;i++){
+          if(obj2[i].formatetime.split(" ")[0]!=now){
+			now = obj2[i].formatetime.split(" ")[0];
+			nowIndex++;
+
+			costtime_distance[nowIndex] = new Array(2);
+      costtime_distance2[nowIndex] = new Array(2);
+			costtime_distance[nowIndex][1] = 0;
+			costtime_distance2[nowIndex][1] = 0;
+			costtime_distance[nowIndex][0] = obj2[i].formatetime.split(" ")[0];
+      costtime_distance2[nowIndex][0] = obj2[i].formatetime.split(" ")[0];
+			costtime_distance[nowIndex][1] += parseInt(obj2[i].distance);
+			costtime_distance2[nowIndex][1] += parseInt(obj2[i].costtime/1000);
+          }else{
+			costtime_distance[nowIndex][1] += parseInt(obj2[i].distance);
+			costtime_distance2[nowIndex][1] += parseInt(obj2[i].costtime/1000);
+          }
+        }
+        drawChart(costtime_distance);
+        drawChart2(costtime_distance2);
+      }
+    </script>
+
+    <!-GOOGLEMAP_API_KEY-->
+    <script async defer
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvYPFNJElH2Nof6kHAEqxQw0z5KyvVILc&callback=initMap">
+    </script>
+
+    <script type="text/javascript">function information(){window.location = 'Information.html';}</script>
+    <script type="text/javascript">function Phone(){window.location = 'Phone.html';}</script>
+    <script type="text/javascript">
+      function SearchName(){
+        //取select的值
+        window.name = document.getElementById("sn").value;
+      }
+    </script>
+  </head>
+  <body name="mybody" onload="load()">
+    <div class="main-panel">
+      <div class="header">
+        <p>
+          <input name="sn" id="sn" placeholder="點擊搜尋用戶" list=text_editors style="width: 100%; height: 100%;font-size: 20pt;" onchange="SearchName()">
+          <datalist id="text_editors">
+              <select name="search" id="search" multiple size=8 style="font-size: 50pt">
+              </select>
+          </datalist>
+        </p>
+      </div>
+      <div class="main-panel-content">
+        <div class="summary-container">
+          <div class="summary" onclick="information()" style="cursor: pointer;">
+            <div class="icon"><i class="fa fa-exchange" aria-hidden="true"> </i></div>
+            <div class="info">
+              <p class="number">Information</p>
+              <p class="subtitle">subtitle</p>
+            </div>
+          </div>
+          <div class="summary" onclick="Phone()" style="cursor: pointer;">
+            <div class="icon"><i class="fa fa-hand-o-up" aria-hidden="true"> </i></div>
+            <div class="info">
+              <p class="number">Phone</p>
+              <p class="subtitle">subtitle</p>
+            </div>
+          </div>
+          <div class="summary" style="cursor: pointer;">
+            <div class="icon"><i class="fa fa-bell-o" aria-hidden="true"> ✔</i></div>
+            <div class="info">
+              <p class="number">GPS</p>
+              <p class="subtitle">subtitle</p>
+            </div>
+          </div>
+          <div class="summary" style="cursor: pointer;">
+            <div class="icon"><i class="fa fa-calendar" aria-hidden="true"> </i></div>
+            <div class="info">
+              <p class="number">四個比較漂亮</p>
+              <p class="subtitle">subtitle</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="container">
+          <div class="card" id="top-summary" style="text-align: center;">
+              <input type="date" id="startdate" style="font-size: 15pt;">
+              <input type="date" id="enddate" style="font-size: 15pt;">
+              <label onclick="initMap()" style="border-style:solid;width: 50px;cursor: pointer;">　Go　</label>
+          </div>
+        </div>
+
+
+        <div class="container">
+          <div class="card" id="top-summary">
+            <div class="title">
+              <h2>移動軌跡</h2>
+              <p class="subtitle">Google Map</p>
+            </div>
+            <div class="content">
+              <canvas id="products_bar_chart" width="1" height="1"></canvas>
+              <div id="map" style="height: 80%;width: 100%;"></div>
+            </div>
+          </div>
+        </div>
+
+
+        <div class="container">
+
+          <div class="card" id="transactions">
+            <div class="title">
+              <h2>移動數據</h2>
+              <p class="subtitle">GPS Data</p>
+            </div>
+            <div id="tablehere" class="content">
+              <table id="table" class="table">
+              </table>
+            </div>
+          </div>
+
+          <div class="card" id="chart">
+            <div class="title">
+              <h2>移動距離</h2>
+              <p class="subtitle">Google LineChart</p>
+            </div>
+            <div class="content">
+              <canvas id="sales_ratio_chart" width="1" height="1"></canvas>
+              <div id="linechart" style="height: 40%;width: 100%;"></div>
+            </div>
+            <div class="content">
+              <canvas id="sales_ratio_chart" width="1" height="1"></canvas>
+              <div id="linechart2" style="height: 40%;width: 100%;"></div>
+            </div>
+          </div>
+
+
+        </div>
+
+      </div>
+    </div>
+  </body>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <script type="text/javascript">
+    google.charts.load('current', {'packages':['line']});
+    google.charts.setOnLoadCallback(drawChart);
+
+    function drawChart(array) {
+	    var data = new google.visualization.DataTable();
+	    data.addColumn('string', 'Day');
+	    data.addColumn('number', '移動距離');
+	    // data.addColumn('number', '行走時間');
+	    data.addRows(array);
+
+		var formatNumer = new google.visualization.NumberFormat({pattern: 'decimal'});
+		formatNumer.format(data, 1);
+    	// formatNumer.format(data, 2);
+	    var options = {
+	        chart: {
+	        	title: '距離(公尺)',
+	        	subtitle: ''
+	        }
+	    };
+
+	    var chart = new google.charts.Line(document.getElementById('linechart'));
+	    chart.draw(data, google.charts.Line.convertOptions(options));
+    }
+    function drawChart2(array) {
+      var data = new google.visualization.DataTable();
+      data.addColumn('string', 'Day');
+      // data.addColumn('number', '移動距離');
+      data.addColumn('number', '行走時間');
+      data.addRows(array);
+
+    var formatNumer = new google.visualization.NumberFormat({pattern: 'decimal'});
+    formatNumer.format(data, 1);
+      // formatNumer.format(data, 2);
+      var options = {
+          chart: {
+            title: '時間(秒)',
+            subtitle: ''
+          }
+      };
+
+      var chart = new google.charts.Line(document.getElementById('linechart2'));
+      chart.draw(data, google.charts.Line.convertOptions(options));
+    }
+  </script>
+  <script>
+    function AcctoMednum(Mednum) {
+      var Account = '';
+      var jsonData = $.ajax({
+                type: "POST",
+                url: "sql/SelectMed.php",
+                data: {mn: Mednum},
+                dataType: "json",
+                async: false
+            }).responseText;
+        obj = eval("(" + jsonData + ")");
+      if (obj[0].account != ""){
+        Account = obj[0].account;
+      }
+      return Account;
+    }
+  </script>
+</html>

@@ -1,0 +1,662 @@
+<html>
+	<meta charset="utf-8">
+	<link href="//vjs.zencdn.net/7.3.0/video-js.min.css" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <script src="//vjs.zencdn.net/7.3.0/video.min.js"></script>
+    <script src="https://xiangyuecn.github.io/Recorder/recorder.mp3.min.js"></script>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+
+    <!-- <link href="app_style/style.css" rel="stylesheet"> -->
+    <!-- <script type="text/javascript" src="data/data.js"></script> -->
+
+	<script language="javascript">
+	window.onload = function () {
+		//語言區------------------------
+
+;		//確定登入狀態
+		checkLogin();
+
+		//每日達成事項
+		dailyAchievement();
+		sleepSetting();
+		//GPS
+		getGPS ();
+
+
+
+	};
+	//GPS
+	function getGPS (){
+		// lanStr = ['Sorry', '無法取得你的位置。', '你的裝置不支援地理位置功能。'];
+		lanStr = ['Sorry', 'Unable to get your location.', 'Your device does not support geolocation.'];
+		// 先確認使用者裝置能不能抓地點
+		if(navigator.geolocation) {
+
+		  // 使用者不提供權限，或是發生其它錯誤
+		  function error() {
+		    swal(lanStr[0],lanStr[1], "error");
+		  }
+
+		  // 使用者允許抓目前位置，回傳經緯度
+		  function success(position) {
+		    console.log(position.coords.latitude, position.coords.longitude);
+		  }
+
+		  // 跟使用者拿所在位置的權限
+		  navigator.geolocation.getCurrentPosition(success, error);
+
+		} else {
+		  // alert('Sorry, 你的裝置不支援地理位置功能。')
+		  swal(lanStr[0],lanStr[2], "error");
+		}
+		// if ("geolocation" in navigator) {
+		//   	 geolocation is available 
+		// } else {
+		//   	/* geolocation IS NOT available */
+		// }
+	}
+
+	//每日達成事項-------------------
+	// 查詢區
+	function dailyAchievement(){
+		// js();
+		//取得帳號資料
+		var account = getCookie('account');
+
+		//查詢歷史資料
+		var jsonData = $.ajax({
+			    type: "POST",
+			    url: "sql/SelectDaywork.php",
+			    data: {at: account},
+			    dataType: "json",
+		        async: false
+		}).responseText;
+		var obj = eval("(" + jsonData + ")");
+		var data = JSON.stringify(obj);
+		// console.log("data = "+data);
+		var data = JSON.stringify(obj.data);
+		// console.log("length = "+(obj.data).length);
+		var data = JSON.stringify(obj.data[5]);
+		// console.log("data0 = "+data);
+
+		if (obj.data[0].data0 >= 1){
+			document.getElementById("ach_video").src="image/videoi.png";
+		}else{
+			document.getElementById("ach_video").src="image/video.png";
+		}if(obj.data[1].data1 >= 1){
+			document.getElementById("ach_speech").src="image/speechi.png";
+		}else{
+			document.getElementById("ach_speech").src="image/speech.png";
+		}if(obj.data[2].data2 >= 1){
+			document.getElementById("ach_text").src="image/texti.png";
+		}else{
+			document.getElementById("ach_text").src="image/text.png";
+		}if(obj.data[3].data3 >= 1){
+			document.getElementById("ach_sleep").src="image/sleepi.png";
+		}else{
+			document.getElementById("ach_sleep").src="image/sleep.png";
+		}if(obj.data[4].data4 >= 1){
+			document.getElementById("ach_mood").src="image/moodi.png";
+		}else{
+			document.getElementById("ach_mood").src="image/mood.png";
+		}if(obj.data[5].data5 >= 1){
+			document.getElementById("ach_scale").src="image/scalei.png";
+		}else{
+			document.getElementById("ach_scale").src="image/scalei.png";
+		}
+	};
+	//錄影---------------------------
+	// function startRecvideo(){
+
+	// }
+	//錄音---------------------------
+	function startRecaudio(){
+		if (navigator.mediaDevices) {
+			console.log('getUserMedia supported.');
+		} else {
+			console.log('getUserMedia not supported on your browser!');
+		}
+	};
+	//上傳錄影------------------------
+	function videoUploader() { 
+
+		lanStrurl = ["sql/doActionvideo_en.php", "sql/doActionaudio_en.php"];
+		
+		lanStr = ["Upload failed!", "Internet connection failed, try again later!"];
+
+		// 上傳中遮罩
+		document.getElementById('loading').style.visibility='visible';
+
+		//讀取檔案
+		const form = document.getElementById('upload_video');
+		formData = new FormData(form);
+
+		//取得帳號資料
+		var account = getCookie('account');
+
+		//上傳影片到Server
+		$.ajax({ 
+			url:lanStrurl[0], 
+			type:"post", 
+			data:formData,
+			processData:false, 
+			contentType:false, 
+			success:function(res){ 
+				$("#pic").val(""); 
+				$(".showUrl").html(res); 
+				$(".showPic").attr("src",res); 
+				//確定是否有error code
+				var saveName = res.substr(13);
+				// console.log("data = "+saveName);
+				// console.log("data = "+res.substr(0, 13));
+				//成功
+				if (res.substr(0, 13) == 'upload_video/'){
+					//上傳表單至資料庫
+					infUpdate(3, saveName, 
+				 		$("#angrybar").val(),
+						$("#boredombar").val(),
+						$("#disgustbar").val(),
+						$("#anxietybar").val(),
+						$("#happinessbar").val(),
+						$("#sadnessbar").val(),
+						$("#surprisedbar").val());
+					document.getElementById('loading').style.visibility='hidden';
+				//失敗
+				
+				}else{
+					document.getElementById('loading').style.visibility='hidden';
+					swal(lanStr[0],res, "error");
+				}
+	
+			}, 
+			error:function(err){
+				document.getElementById('loading').style.visibility='hidden';
+				swal(lanStr[1],err, "error");
+			}
+		})
+	};
+	//上傳錄音-----------------------
+	function audioUploader(){
+		
+		lanStr = ["Upload failed!", "Internet connection failed, try again later!"];
+		// lanStrurl = ["sql/doActionvideo.php", "sql/doActionaudio.php"];
+		lanStrurl = ["sql/doActionvideo_en.php", "sql/doActionaudio_en.php"];
+
+		// 上傳中遮罩
+		document.getElementById('loading').style.visibility='visible';
+		// 讀取檔案
+		var form = document.getElementById('upload_audio'), 
+		formData = new FormData(form);
+		// console.log(formData);
+		//取得帳號資料
+		var account = getCookie('account');
+
+		//上傳錄音到Server
+		$.ajax({ 
+			url:lanStrurl[1], 
+			type:"post", 
+			data:formData,
+			processData:false, 
+			contentType:false, 
+			success:function(res){ 
+				$("#pic").val(""); 
+				$(".showUrl").html(res); 
+				$(".showPic").attr("src",res); 
+				//確定是否有error code
+				var saveName = res.substr(8);
+				// console.log("data = "+saveName);
+				// console.log("data = "+res.substr(0, 13));
+				//成功
+				if (res.substr(0, 8) == 'SER/wav/'){
+					//上傳表單至資料庫
+					infUpdate(1, saveName, 
+				 		$("#angrybar").val(),
+						$("#boredombar").val(),
+						$("#disgustbar").val(),
+						$("#anxietybar").val(),
+						$("#happinessbar").val(),
+						$("#sadnessbar").val(),
+						$("#surprisedbar").val());
+					document.getElementById('loading').style.visibility='hidden';
+				//失敗
+				}else{
+					document.getElementById('loading').style.visibility='hidden';
+					swal(lanStr[0],res, "error");
+				}
+			}, 
+			error:function(err){ 
+				document.getElementById('loading').style.visibility='hidden';
+				swal(lanStr[1],err, "error");
+			}
+		})
+    };
+    //文字---------------------------
+    function textUploader(){
+    	lanStrenter = ["Write down your mood!", "Upload!"];
+    	lanStr = ['Oh noes!', "The content can not be blank!"];
+    	// lanStrenter = ["寫下你的心情！", "上傳！"];
+    	// lanStr = ['哦不！', "內容不能為空！"];
+		swal({
+		  	text: lanStrenter[0],
+		  	content: "input",
+		  	button: {
+		    text: lanStrenter[1],
+		    closeModal: false,
+		  },
+		})
+		.then(name => {
+		  	if (!name) throw null;
+		  	//取得帳號資訊
+		 	infUpdate(0, name, 
+		 		$("#angrybar").val(),
+				$("#boredombar").val(),
+				$("#disgustbar").val(),
+				$("#anxietybar").val(),
+				$("#happinessbar").val(),
+				$("#sadnessbar").val(),
+				$("#surprisedbar").val());
+			})
+		.catch(err => {
+		  	if (err) {
+		    	swal(lanStr[0], lanStr[1], "error");
+		  	} else {
+		    	swal.stopLoading();
+		    	swal.close();
+		  	}
+		});
+	}
+
+	// Daily Mood
+	function dmUploader(){
+		var rangebar = $("#rangebar").val();
+		infUpdate(4, rangebar, 0, 0, 0, 0, 0, 0, 0);
+	}
+
+	//起床與睡眠時間
+	// Daily Mood
+	function sleepUploader(){
+		var getupTime = $("#getup-time").val();
+		var sleepTime = $("#sleep-time").val();
+		getupTime = getupTime.replace(/T/g, " ");
+		sleepTime = sleepTime.replace(/T/g, " ");
+		console.log('getupTime='+getupTime);
+		infUpdate(5, getupTime, 0, 0, 0, 0, 0, 0, 0);
+		infUpdate(8, sleepTime, 0, 0, 0, 0, 0, 0, 0);
+	}
+	//睡眠時間設置
+	function sleepSetting(){
+		var dateField = document.getElementById("getup-time");
+		var dateField2 = document.getElementById("sleep-time");
+		
+		// 預設今天
+		var d = new Date();
+		date = new Date(d.setHours(d.getDate() + 8));
+		// console.log('dateNew='+date);
+		dateField.setAttribute("value", date.toISOString().slice(0, 16));
+		date = new Date(date.setHours(date.getDate() + 8));
+		dateField2.setAttribute("value", date.toISOString().slice(0, 16));
+		// 最大到明天
+		date = new Date(d.setHours(d.getDate() + 8));
+		date = new Date(d.setDate(d.getDate() + 1));
+		// console.log('dateNew='+date);
+		dateField.setAttribute("max", date.toISOString().slice(0, 16));
+		dateField2.setAttribute("max", date.toISOString().slice(0, 16));
+	}
+	//上傳表單置資料庫
+	function infUpdate(types, write, object_Anger, object_Boredom, object_Disgust, object_Anxiety, object_Happiness, object_Sadness, object_Surprised){
+		lanStr = ["Uploaded successfully!", "Upload failed!", "Collect more information to make yourself better!", "Internet connection failed, try again later!"];
+		// lanStr = ["上傳成功！", "上傳失敗！", "收集更多信息讓自己變得更好！", "網絡連接失敗，稍後重試！"];
+
+		var account = getCookie('account');
+			//上傳使用者意見回饋
+		var jsonData = $.ajax({
+			    type: "POST",
+			    url: "sql/InsertNewData.php",
+			    data: {at: account, type: types, content: write, object_Anger:object_Anger, object_Boredom:object_Boredom, object_Disgust:object_Disgust, object_Anxiety:object_Anxiety, object_Happiness:object_Happiness, object_Sadness:object_Sadness, object_Surprised:object_Surprised},
+			    dataType: "json",
+		        async: false
+		}).responseText;
+		var obj = eval("(" + jsonData + ")");
+		
+		//成功區
+	 	if (obj.success = '1'){
+	   		swal(lanStr[0],lanStr[2], "success");
+	   	//失敗區
+	 	}else {
+	    	swal(lanStr[1],lanStr[3], "error");
+	 	}
+	}
+	//雙選項設置--尚未完成-------------------
+	function doubleButton(types){
+		swal("你已經上傳過了，還要再上傳一次嗎?", {
+		  buttons: {
+		    cancel: "不要",
+		    catch: {
+		      text: "Throw Pokéball!",
+		      value: "catch",
+		    },
+		    defeat: true,
+		  },
+		})
+		.then((value) => {
+		  switch (value) {
+		 
+		    case "覆蓋掉舊的!":
+
+		      	break;
+		 
+		    case "再傳一個新的!":
+
+		      	break;
+		 
+		    default:
+
+		    	break;
+		  }
+		});
+	}
+	//時間格式轉換
+	function dateTranslate(timeS){
+		if (timeS.getMonth()+1 < 10){
+			var TMonth = '0'+(timeS.getMonth()+1);
+		}else{
+			var TMonth = timeS.getMonth()+1;
+		}
+		if (timeS.getDate() < 10){
+			var TDate = '0'+timeS.getDate();
+		}else{
+			var TDate = timeS.getDate();
+		}
+		if (timeS.getHours() < 10){
+			var THours = '0'+timeS.getHours();
+		}else{
+			var THours = timeS.getHours();
+		}
+		if (timeS.getMinutes() < 10){
+			var TMinutes = '0'+timeS.getMinutes();
+		}else{
+			var TMinutes = timeS.getMinutes();
+		}
+		if (timeS.getSeconds() < 10){
+			var TSeconds = '0'+timeS.getSeconds();
+		}else{
+			var TSeconds = timeS.getSeconds();
+		}
+		var date = timeS.getFullYear()+TMonth+TDate+
+          	"-"+THours+
+          	"-"+TMinutes+
+          	"-"+TSeconds;
+		return date;
+	}
+	// 連接區
+	function toLogin(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/login_en.html");
+	};
+	function tocreateAccount(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/createAcc_en.html");
+	};
+	function toforgotPassword(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/forgotPassword_en.html");
+	};
+	function todataCollation(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/dataCollection_en.html");
+	};
+	function toPoint(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/Point_en.html");
+	};
+	function toFeedback(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/Feedback_en.html");
+	};
+	function toSetting(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/Setting_en.html");
+	};
+	function toDatalist(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/dataList_en.html");
+	};
+	function toselfScale(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/webselfScale_en.html");
+	};
+	// cookie 區-------------------------------------------
+	//獲取cookie
+	function getCookie(cname) {
+	    var name = cname + "=";
+	    var ca = document.cookie.split(';');
+	    for(var i=0; i<ca.length; i++) {
+	        var c = ca[i];
+	        while (c.charAt(0)==' ') c = c.substring(1);
+	        if (c.indexOf(name) != -1) return c.substring(name.length, c.length);
+	    }
+	    return "";
+	};
+	//清除cookie  
+	function delCookie(name) {
+	    var exp = new Date();
+	    exp.setTime(exp.getTime() - 1);
+	    var cval=getCookie(name);
+	    if(cval!=null)
+        document.cookie= name + "="+cval+";expires="+exp.toGMTString();
+	};
+	//設定cookie
+	function setCookie(cname, cvalue, exdays) {
+	    var d = new Date();
+	    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+	    var expires = "expires="+d.toUTCString();
+	    document.cookie = cname + "=" + cvalue + "; " + expires;
+	}
+	//檢查登入狀態
+	function checkLogin() {
+		// var enStr = ['登入逾期了!','請重新登入'];
+		var enStr = ['Login expired!','Please login again'];
+		var timestamp = (new Date()).valueOf();
+		// alert(timestamp);
+		if (timestamp >= getCookie('d')) {
+
+			delCookie('account');
+			delCookie('d');
+			swal(enStr[0],enStr[1], "warning");
+			setTimeout(function(){
+				toLogin();
+			}, 3000);
+		}else{
+			delCookie('d');
+			setCookie('d', timestamp+(10*60*1000));
+		}
+	};
+
+	</script>
+	<style>
+		#dailymood-image{ width: 95%; }
+		#rangebar { width: 95%; }
+
+		#angrybar{ float:left; width:100%; } 
+		#anxietybar{ float:left; width:100%; } 
+		#boredombar{ float:left; width:100%; } 
+		#disgustbar{ float:left; width:100%; } 
+		#happinessbar{ float:left; width:100%; } 
+		#sadnessbar{ float:left; width:100%; } 
+		#surprisedbar{ float:left; width:100%; } 
+		/*td { width:50% }*/
+
+		.loading {
+			display: table;
+			position: fixed;
+			visibility: hidden;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: #fff;
+			z-index: 5;
+			}
+			.loading .progress {
+			display: table-cell;
+			vertical-align: middle;
+			text-align: center;
+		}
+
+	</style>
+	<body>
+		<title>"Mood APP data collection"</title><BR>
+		<h2>Data collection</h2>
+		<!-- <input  class="button black" id="camara" type="button" runat="server"  value="錄製情緒影片" onclick="camara()" /> -->
+		<div class="container">
+          	<div class="card" id="transactions">
+            	<div class="title">
+              		<h2>Achievements</h2>
+              		<p class="subtitle"></p>
+            	</div>
+            	<div id="achievement" class="content">
+              		<table id="achievementtable" class="table">
+              			<tr>
+	              			<td style="width:50%;"><img id="ach_video" src="">
+	              				<br>
+	              				<h>Audio-visual</h>
+	              			</td>
+	              			<td style="width:50%;"><img id="ach_speech" src="">
+	              				<br>
+	              				<h>Recording</h>
+	              			</td>
+	              			<td style="width:50%;"><img id="ach_text" src="">
+	              				<br>
+	              				<h>Text</h>
+	              			</td>
+              			</tr>
+              			<tr>
+              				<td style="width:50%;"><img id="ach_sleep" src="">
+              					<br>
+	              				<h>Sleeping state</h>
+	              			</td>
+              				<td style="width:50%;"><img id="ach_mood" src="">
+              					<br>
+	              				<h>Daily mood</h>
+	              			</td>
+              				<td style="width:50%;"><img id="ach_scale" src="">
+              					<br>
+	              				<h>Weekly scale</h>
+	              			</td>
+              			</tr>
+              		</table>
+            	</div>
+          	</div>
+        </div>
+        <h2>Audio-visual emotion</h2>
+        <h>Start by selecting your current mood, and then upload a matching video, voice or text.</h>
+        <div id="subemotion" class="content">
+            <table id="subemotiontable" class="table">
+            	<tr>
+            		<td><img src="image/angry.png" style="width:20%;height:20%"><h>Angry</h></td>
+            		<td><input type="range" id="angrybar" value="0" step="1"  min="0" max="3"></td>
+            	</tr>
+            	<tr>
+            		<td><img src="image/anxiety.png" style="width:20%;height:20%"><h>Anxiety</h></td>
+            		<td><input type="range" id="anxietybar" value="0" step="1"  min="0" max="3"></td>
+            	</tr>
+            	<tr>
+            		<td><img src="image/boredom.png" style="width:20%;height:20%"><h>Boredom</h></td>
+            		<td><input type="range" id="boredombar" value="0" step="1"  min="0" max="3"></td>
+            	</tr>
+            	<tr>
+            		<td><img src="image/disgust.png" style="width:20%;height:20%"><h>Disgust</h></td>
+            		<td><input type="range" id="disgustbar" value="0" step="1"  min="0" max="3"></td>
+            	</tr>
+            	<tr>
+            		<td><img src="image/happiness.png" style="width:20%;height:20%"><h>Happiness</h></td>
+            		<td><input type="range" id="happinessbar" value="0" step="1"  min="0" max="3"></td>
+            	</tr>
+            	<tr>
+            		<td><img src="image/sadness.png" style="width:20%;height:20%"><h>Sadness</h></td>
+            		<td><input type="range" id="sadnessbar" value="0" step="1"  min="0" max="3"></td>
+            	</tr>
+            	<tr>
+            		<td><img src="image/surprised.png" style="width:20%;height:20%"><h>Surprised</h></td>
+            		<td><input type="range" id="surprisedbar" value="0" step="1"  min="0" max="3"></td>
+            	</tr>
+            </table>
+        </div>
+        <div id="mideaemotion" class="content">
+            <table id="mideaemotiontable" class="table">
+            	<tr>
+	            	<td>
+						<span> Audio-visual emotion </span>
+						<form id="upload_video" enctype="multipart/form-data" method="post"> 
+							<input type="file" name="myFile1" accept=".mp4,.MOV,.M4V*" id="pic"/> 
+							<input type="button" value="Upload audio-visual" onclick="videoUploader()"/> 
+						</form> 
+						<br>
+					</td>
+					</tr>
+					<tr>
+					<td>
+						<form id="upload_audio" enctype="multipart/form-data" method="post"> 
+							<input type="file" name="myFile2" accept=".m4a,.WAV,.MP3,.AAC,.3GPP*"id="pic2"/> 
+							<input type="button" value="Upload recording" onclick="audioUploader()"/> 
+						</form> 
+						<br>
+					<td>
+				</tr>
+				<tr>
+					<td>
+						<span> Text emotion </span>
+						<br>
+						<input  class="button black" id="text-uploader" type="button" runat="server"  value="Text emotion" onclick="textUploader()" /><BR>
+						<br>
+					</td>
+				</tr>
+				</td>
+            </table>
+        </div>
+		<hr>
+		<div>
+			<h2>Sleep state</h2>
+			<span> Wake up time </span>
+			<input type="datetime-local" id="getup-time"
+		    name="meeting-time" value=""
+		    min="" max="">
+		    <br>
+		    <br>
+		    <span> Sleeping time </span>
+		    <input type="datetime-local" id="sleep-time"
+		    name="meeting-time" value=""
+		    min="" max="">
+		    <br>
+		    <br>
+			<input  class="button black" id="sleep-uploader" type="button" runat="server"  value="Send sleep state" onclick="sleepUploader()" /><BR></div>
+		<hr>
+		<div>
+			<h2>Daily Mood</h2>
+			<img src="image/bd.png" id="dailymood-image">
+			<br>
+			<input type="range" id="rangebar" value="3" step="1"  min="0" max="6">
+			<br>
+		    <br>
+			<input  class="button black" id="dailymood-uploader" type="button" runat="server"  value="Send your daily mood" onclick="dmUploader()" /><BR></div>
+		<hr>
+		<div>
+			<h2>Weekly scale</h2>
+			<input  class="button black" id="weekscale-uploader" type="button" runat="server"  value="Weekly scale" onclick="toselfScale()" /><BR></div>
+		<hr>
+		<div class="content">
+	    	<table width="100%">
+		   	<th>
+		   		<button type="button" id="page5" onclick=""><img src="image/page1i.png" style="width:50%;height:20%"></button>
+		   	</th>
+		   	<th>
+				<button type="button" id="page5" onclick="toPoint()"><img src="image/page2.png" style="width:50%;height:20%"></button>
+			</th>
+		   	<th>
+				<button type="button" id="page5" onclick="toFeedback()"><img src="image/page3.png" style="width:50%;height:20%"></button>
+			</th>
+		   	<th>
+				<button type="button" id="page5" onclick="toDatalist()"><img src="image/page4.png" style="width:50%;height:20%"></button>
+			</th>
+		   	<th>
+				<button type="button" id="page5" onclick="toSetting()"><img src="image/page5.png" style="width:50%;height:20%"></button>
+			</th>
+			</table>
+	    </div>
+	</body>
+	<div class="loading" id="loading">
+	<div class="progress" id="progress">Uploading please wait</div>
+</html>
+

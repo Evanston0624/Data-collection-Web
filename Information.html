@@ -1,0 +1,718 @@
+﻿<html>
+  <head>
+    <meta charset="utf-8">
+    <title>查詢</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script type="text/javascript" src="data/data.js"></script>
+    <link rel=stylesheet type="text/css" href="data/data.css">
+    <link rel=stylesheet type="text/css" href="slidecss/slide.css">
+    
+    <script type="text/javascript">
+      function load(){
+        //跳轉時載入
+        var sn = document.getElementById('sn');
+        sn.value = window.name;
+
+        var sd = document.getElementById('startdate');
+        var ed = document.getElementById('enddate');
+        var Today = new Date();
+        var date = "";
+        
+        //載入日期
+        if((Today.getMonth()+1)<10){
+          if(Today.getDate()<10){
+            date = Today.getFullYear()+"-0"+(Today.getMonth()+1)+"-0"+(Today.getDate());
+          }
+          else{
+            date = Today.getFullYear()+"-0"+(Today.getMonth()+1)+"-"+(Today.getDate());
+          }
+        }
+        else{
+          if(Today.getDate()<10){
+            date = Today.getFullYear()+"-"+(Today.getMonth()+1)+"-0"+(Today.getDate());
+          }
+          else{
+            date = Today.getFullYear()+"-"+(Today.getMonth()+1)+"-"+(Today.getDate());
+          }
+        }
+
+        sd.value = date;
+        ed.value = date;
+      }
+    </script>
+    <!---->
+    <script type="text/javascript">
+      obj={};
+      obj2={};
+      // document.getElementById('sn').value = window.name;
+      function initMap() {
+        js();
+        var Today = new Date();
+        var account = document.getElementById('sn').value;
+        var startdate = document.getElementById("startdate").value;
+        var enddate = document.getElementById("enddate").value;
+        if(startdate!="" && enddate!=""){
+          var result = enddate.split("-");
+          result[2] = parseInt(result[2])+1;
+          enddate = result[0]+"-"+result[1]+"-"+result[2];
+        }else if(startdate!="" && enddate==""){//假設有選startdate，就是startdate到當天
+          if((Today.getMonth()+1)<10){
+            if(Today.getDate()<10){
+              enddate = Today.getFullYear()+"-0"+(Today.getMonth()+1)+"-0"+(Today.getDate()+1);
+            }
+            else{
+              enddate = Today.getFullYear()+"-0"+(Today.getMonth()+1)+"-"+(Today.getDate()+1);
+            }
+          }
+          else{
+            if(Today.getDate()<10){
+              enddate = Today.getFullYear()+"-"+(Today.getMonth()+1)+"-0"+(Today.getDate()+1);
+            }
+            else{
+              enddate = Today.getFullYear()+"-"+(Today.getMonth()+1)+"-"+(Today.getDate()+1);
+            }
+          }
+        }else{//如果兩個日期都沒選，就是當天日期
+          if((Today.getMonth()+1)<10){
+            if(Today.getDate()<10){
+              startdate = Today.getFullYear()+"-0"+(Today.getMonth()+1)+"-0"+Today.getDate();
+              if(Today.getDate()==9)
+                enddate = Today.getFullYear()+"-"+(Today.getMonth()+1)+"-"+(Today.getDate()+1);
+              else
+                enddate = Today.getFullYear()+"-"+(Today.getMonth()+1)+"-0"+(Today.getDate()+1);
+            }
+            else{
+              startdate = Today.getFullYear()+"-0"+(Today.getMonth()+1)+"-"+Today.getDate();
+              enddate = Today.getFullYear()+"-0"+(Today.getMonth()+1)+"-"+(Today.getDate()+1);
+            }
+          }
+          else{
+            if(Today.getDate()<10){
+              startdate = Today.getFullYear()+"-"+(Today.getMonth()+1)+"-0"+Today.getDate();
+              if(Today.getDate()==9)
+                enddate = Today.getFullYear()+"-"+(Today.getMonth()+1)+"-"+(Today.getDate()+1);
+              else
+                enddate = Today.getFullYear()+"-"+(Today.getMonth()+1)+"-0"+(Today.getDate()+1);
+            }
+            else{
+              startdate = Today.getFullYear()+"-"+(Today.getMonth()+1)+"-"+Today.getDate();
+              enddate = Today.getFullYear()+"-"+(Today.getMonth()+1)+"-"+(Today.getDate()+1);
+            }
+          }
+        }
+
+        //Get GPS JsonData from SQL
+        var account = window.name;
+        var acc_result = AcctoMednum(account);
+        if (acc_result != ""){
+          account = acc_result;
+        }
+        var jsonData = $.ajax({
+                type: "POST",
+                url: "sql/Selectinfo.php",
+                data: {at: account, startdate:startdate, enddate:enddate},
+                dataType: "json",
+                async: false
+            }).responseText;
+        var obj = eval("(" + jsonData + ")");
+        
+        //Get Element Table
+        var table = document.getElementById("table");
+        table.remove();
+        var tablehere =document.getElementById("tablehere");
+        table = document.createElement("table");
+        table.setAttribute("id","table");
+        table.className = "table";
+        tablehere.appendChild(table);
+        var row = table.insertRow(0);
+        var cell1 = row.insertCell(0);
+        var cell2 = row.insertCell(1);
+        var cell3 = row.insertCell(2);
+        var cell4 = row.insertCell(3);
+        var cell5 = row.insertCell(4);
+        var cell6 = row.insertCell(5);
+        var cell7 = row.insertCell(6);
+        var cell8 = row.insertCell(7);
+        var cell9 = row.insertCell(8);
+        cell1.innerHTML = "內容----------";
+        cell2.innerHTML = "Ang";
+        cell3.innerHTML = "B";
+        cell4.innerHTML = "D";
+        cell5.innerHTML = "Anx";
+        cell6.innerHTML = "Hap";
+        cell7.innerHTML = "Sad";
+        cell8.innerHTML = "Sur";
+        // cell2.innerHTML = "Anger";
+        // cell3.innerHTML = "Boredom";
+        // cell4.innerHTML = "Disgust";
+        // cell5.innerHTML = "Anxiety";
+        // cell6.innerHTML = "Happiness";
+        // cell7.innerHTML = "Sadness";
+        // cell8.innerHTML = "Surprised";
+        cell9.innerHTML = "紀錄時間";
+        if(obj.length<=1){
+          //先刪除原先的
+          var slider = document.getElementById("slider");
+          var noslider = document.getElementById("noslider");
+          slider.remove();
+          noslider.remove();
+
+          //再創造
+          var div = document.createElement("div");
+          var slider1 = document.createElement("div");
+          div.setAttribute("id","noslider");
+          slider1.setAttribute("id","slider");
+          
+          //加入
+          sliderhere.appendChild(slider1);
+          sliderhere.appendChild(div);
+        }
+        else{
+          //先刪除原先的
+          var slider = document.getElementById("slider");
+          var noslider = document.getElementById("noslider");
+          slider.remove();
+          noslider.remove();
+
+          //再創造
+          var div = document.createElement("div");
+          var noslider1 = document.createElement("div");
+          div.setAttribute("id","slider");
+          noslider1.setAttribute("id","noslider");
+          var control_next = document.createElement('a');
+          control_next.setAttribute('class', 'control_next');
+          control_next.setAttribute('href', '#');
+          control_next.innerHTML = ">";
+          var control_prev = document.createElement('a');
+          control_prev.setAttribute('class', 'control_prev');
+          control_prev.setAttribute('href', '#');
+          control_prev.innerHTML = "<";
+
+          div.appendChild(control_prev);
+          div.appendChild(control_next);
+          //加入
+          sliderhere.appendChild(div);
+          sliderhere.appendChild(noslider1);
+        }
+
+        var ul=document.createElement('ul');
+        var witch = "text";
+
+        var bodyoninput = document.getElementById("mybody");
+        var oninput = "";
+        for(i=0;i<obj.length;i++){
+          var row = table.insertRow(i+1);
+          var cell1 = row.insertCell(0);
+          var cell2 = row.insertCell(1);
+          var cell3 = row.insertCell(2);
+          var cell4 = row.insertCell(3);
+          var cell5 = row.insertCell(4);
+          var cell6 = row.insertCell(5);
+          var cell7 = row.insertCell(6);
+          var cell8 = row.insertCell(7);
+          var cell9 = row.insertCell(8);
+          // cell1.innerHTML = obj[i].write;
+          // cell2.innerHTML = obj[i].subject_Anger;
+          // cell3.innerHTML = obj[i].subject_Boredom;
+          // cell4.innerHTML = obj[i].subject_Disgust;
+          // cell5.innerHTML = obj[i].subject_Anxiety;
+          // cell6.innerHTML = obj[i].subject_Happiness;
+          // cell7.innerHTML = obj[i].subject_Sadness;
+          // cell8.innerHTML = obj[i].subject_Surprised;
+          // cell9.innerHTML = obj[i].Datetime;
+          cell1.innerHTML = obj[i].write;
+          cell2.innerHTML = obj[i].object_Anger;
+          cell3.innerHTML = obj[i].object_Boredom;
+          cell4.innerHTML = obj[i].object_Disgust;
+          cell5.innerHTML = obj[i].object_Anxiety;
+          cell6.innerHTML = obj[i].object_Happiness;
+          cell7.innerHTML = obj[i].object_Sadness;
+          cell8.innerHTML = obj[i].object_Surprised;
+          cell9.innerHTML = obj[i].datetime2;
+
+          //create element
+          var li=document.createElement('li');
+          if(obj[i].write.includes(".wav")){
+            witch = "audio";
+            var Element = document.createElement(witch);
+            var source = document.createElement('source');
+            source.src = '../../../app/SER/wav/'+obj[i].write;
+            Element.appendChild(source);
+            Element.setAttribute("controls","controls");
+            Element.setAttribute("width",300);
+            Element.setAttribute("height",500);
+            var div1 = document.createElement('div');
+            div1.className = "div_range";
+            var divElement = document.createElement('div');
+            divElement.className = "div_range_radio_word";
+          } else if(obj[i].write.includes(".mp4")){
+            witch = "video";
+            var Element = document.createElement(witch);
+            var source = document.createElement('source');
+            source.src = '../../../app/upload_video/'+obj[i].write;
+            Element.appendChild(source);
+            Element.setAttribute("controls","controls");
+            Element.setAttribute("width",300);
+            Element.setAttribute("height",500);
+
+            var div1 = document.createElement('div');
+            div1.className = "div_range_video";
+            var divElement = document.createElement('div');
+            divElement.className = "div_range_video"
+          }else{
+            witch = "textarea";
+            var Element = document.createElement(witch);
+            Element.name = "text";
+            Element.cols = "50";
+            Element.rows = "6";
+            Element.value = obj[i].write;
+            Element.readOnly = true;
+            if(obj[i].write.length<1)
+              Element.setAttribute("value","沒有內容");
+            else
+              Element.setAttribute("value",obj[i].write);
+            var div1 = document.createElement('div');
+            div1.className = "div_range";
+            var divElement = document.createElement('div');
+            divElement.className = "div_range_radio_word";
+          }
+	  
+	  var datetime = document.createElement('textarea');
+          datetime.name = "datetime"+i;
+          datetime.cols = "50";
+          datetime.rows = "6";
+          datetime.value = obj[i].Datetime;
+          datetime.readOnly = true;
+	  datetime.classname = "datetime";
+	  li.appendChild(datetime);
+
+          for(j=0;j<7;j++){
+            var icon = document.createElement('img');
+            icon.className = "img_icon";
+            if(j==0){
+              icon.setAttribute("src","icon/angry.png");
+            } else if(j==1){
+              icon.setAttribute("src","icon/boredom.png");
+            } else if(j==2){
+              icon.setAttribute("src","icon/disgust.png");
+            } else if(j==3){
+              icon.setAttribute("src","icon/anxiety.png");
+            } else if(j==4){
+              icon.setAttribute("src","icon/happiness.png");
+            } else if(j==5){
+              icon.setAttribute("src","icon/sadness.png");
+            } else if(j==6){
+              icon.setAttribute("src","icon/surprised.png");
+            }
+            var input = document.createElement('input');
+            input.setAttribute("id","points"+i+""+j);
+            input.setAttribute("name","points"+i+""+j);
+            input.className = "input_range";
+            input.setAttribute("type","range");
+            input.setAttribute("value", 0);
+            input.setAttribute("min", 0);
+            input.setAttribute("max", 6);
+            input.setAttribute("data-show-value", "true");
+
+            var output = document.createElement('output');
+            output.setAttribute("id","amount"+i+""+j);
+            output.setAttribute("for","points"+i+""+j);
+            output.className = "output_range";
+            output.innerHTML = 0;
+
+            var div_container = document.createElement('div');
+            div_container.className = "div_container";
+
+            div_container.appendChild(output);
+            div_container.appendChild(input);
+            div_container.appendChild(icon);
+            div1.appendChild(div_container);
+            oninput += "amount"+i+""+j+".value=points"+i+""+j+".value;";
+          }
+          var div_container = document.createElement('div');
+          div_container.className = "div_container";
+
+          var button = document.createElement('input');
+          button.setAttribute("id","button_tag"+i);
+          button.setAttribute("name","button_tag"+i);
+          button.setAttribute("type","button");
+          button.setAttribute("value", "標記確認");
+          button.setAttribute("onclick", "tag('"+i+","+obj[i].Datetime+"')");
+          button.className = "button_tag";
+          div_container.appendChild(button);
+          div1.appendChild(div_container);
+ 
+          divElement.appendChild(Element);
+          li.appendChild(divElement);
+          li.appendChild(div1);
+          ul.appendChild(li);
+        }
+	 
+        div.appendChild(ul);
+        bodyoninput.setAttribute("oninput",oninput);
+
+        //Get GPS JsonData from SQL
+        var jsonData = $.ajax({
+                type: "POST",
+                url: "sql/SelectinfoS.php",
+                data: {at: account, startdate: startdate ,enddate: enddate},
+                dataType: "json",
+                async: false
+            }).responseText;
+        obj2 = eval("(" + jsonData + ")");
+
+        //建立時間搓
+    var timecount = 0;
+    var timestr = "";
+        for(i=1;i<obj2.length;i++){
+          if(obj2[i].infdate!=timestr){
+            timestr = obj2[i].infdate;
+            timecount++;
+          }
+        }
+        
+        //建立折線圖資料
+        var now = "";
+        var nowIndex = -1; 
+        var costtime_distance = new Array(timecount);
+        for(i=1;i<obj2.length;i++){
+          if(obj2[i].infdate!=now){
+            now = obj2[i].infdate;
+            nowIndex++;
+            costtime_distance[nowIndex] = new Array(4);
+            costtime_distance[nowIndex][0] = obj2[i].infdate;
+            costtime_distance[nowIndex][1] = 0;
+            costtime_distance[nowIndex][2] = 0;
+            costtime_distance[nowIndex][3] = 0;
+            if (nowIndex > 0){
+              if (parseInt(costtime_distance[nowIndex-1][2] > 12)){
+                costtime_distance[nowIndex-1][3] = Math.abs(costtime_distance[nowIndex-1][1]+(24-costtime_distance[nowIndex-1][2]));
+              }else{
+                costtime_distance[nowIndex-1][3] = Math.abs(costtime_distance[nowIndex-1][1]-costtime_distance[nowIndex-1][2]);
+              }
+            }
+          }
+          if (obj2[i].type == '5'){//起床
+            costtime_distance[nowIndex][1] = parseInt(obj2[i].infh)+(parseInt(obj2[i].infm)*0.1)/6;
+          }
+          if (obj2[i].type == '8'){
+            costtime_distance[nowIndex][2] = parseInt(obj2[i].infh)+(parseInt(obj2[i].infm)*0.1)/6;
+          }
+          if (i==(obj2.length)-1){
+            if (parseInt(costtime_distance[nowIndex][2] > 12)){
+              osttime_distance[nowIndex][3] = Math.abs(costtime_distance[nowIndex][1]+(24-costtime_distance[nowIndex][2]));
+            }else{
+              costtime_distance[nowIndex][3] = Math.abs(costtime_distance[nowIndex][1]-costtime_distance[nowIndex][2]);
+            }
+          }
+        }
+        drawChart(costtime_distance);
+
+        //Get GPS JsonData from SQL
+        var jsonData = $.ajax({
+                type: "POST",
+                url: "sql/SelectinfoM.php",
+                data: {at: account, startdate: startdate ,enddate: enddate},
+                dataType: "json",
+                async: false
+            }).responseText;
+        obj2 = eval("(" + jsonData + ")");
+
+        //建立時間搓
+    var timecount = 0;
+    var timestr = "";
+        for(i=1;i<obj2.length;i++){
+          if(obj2[i].infdate!=timestr){
+            timestr = obj2[i].infdate;
+            timecount++;
+          }
+        }
+        
+        //建立折線圖資料
+        var now = "";
+        var nowIndex = -1; 
+        var costtime_distance = new Array(timecount);
+        for(i=1;i<obj2.length;i++){
+          if(obj2[i].infdate!=now){
+            now = obj2[i].infdate;
+            nowIndex++;
+            costtime_distance[nowIndex] = new Array(2);
+            costtime_distance[nowIndex][0] = obj2[i].infdate;
+            costtime_distance[nowIndex][1] = 0;
+          }
+            costtime_distance[nowIndex][1] = parseInt(obj2[i].infdata);
+        }
+        drawChart2(costtime_distance);
+      }
+    </script>
+
+    <script type="text/javascript">function Phone(){window.location = 'Phone.html';}</script>
+    <script type="text/javascript">function GPS(){window.location = 'GPS.html';}</script>
+    <script type="text/javascript">
+      function SearchName(){
+        //取select的值
+        window.name = document.getElementById("sn").value;
+      }
+    </script>
+  </head>
+  <body id="mybody" name="mybody" onload="load()">
+    <div class="main-panel">
+      <div class="header">
+        <p>
+          <input name="sn" id="sn" placeholder="點擊搜尋用戶" list=text_editors style="width: 100%; height: 100%;font-size: 20pt;" onchange="SearchName()">
+          <datalist id="text_editors">
+              <select name="search" id="search" multiple size=8 style="font-size:50pt;">
+                <option value="evan">evan</option>
+
+              </select>
+          </datalist>
+        </p>
+      </div>
+      <div class="main-panel-content">
+        <div class="summary-container">
+          <div class="summary" style="cursor: pointer;background-color: red">
+            <div class="icon"><i class="fa fa-exchange" aria-hidden="true"> ✔</i></div>
+            <div class="info">
+              <p class="number">Information</p>
+              <p class="subtitle">subtitle</p>
+            </div>
+          </div>
+          <div class="summary" onclick="Phone()" style="cursor: pointer;">
+            <div class="icon"><i class="fa fa-hand-o-up" aria-hidden="true"> </i></div>
+            <div class="info">
+              <p class="number">Phone</p>
+              <p class="subtitle">subtitle</p>
+            </div>
+          </div>
+          <div class="summary" onclick="GPS()" style="cursor: pointer;">
+            <div class="icon"><i class="fa fa-bell-o" aria-hidden="true"> </i></div>
+            <div class="info">
+              <p class="number">GPS</p>
+              <p class="subtitle">subtitle</p>
+            </div>
+          </div>
+          <div class="summary" style="cursor: pointer;">
+            <div class="icon"><i class="fa fa-calendar" aria-hidden="true"> </i></div>
+            <div class="info">
+              <p class="number">四個比較漂亮</p>
+              <p class="subtitle">subtitle</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="container">
+          <div class="card" id="top-summary" style="text-align: center;">
+              <input type="date" id="startdate" style="font-size: 15pt;">　　
+              <input type="date" id="enddate" style="font-size: 15pt;">
+              <label onclick="initMap()" style="border-style:solid;width: 50px;cursor: pointer;">　Go　</label>
+          </div>
+        </div>
+
+
+        <div class="container">
+          <div class="card" id="top-summary">
+            <div class="title">
+              <h2>標記</h2>
+              <p class="subtitle"></p>
+            </div>
+            <div id="sliderhere" class="content">
+              <canvas id="products_bar_chart" width="2" height="1"></canvas>
+              <div id="slider">
+                <a href="#" class="control_next" id="next">></a>
+                <a href="#" class="control_prev" id="prev"><</a>
+                <!--here ul li-->
+              </div>
+              <div id="noslider"></div>
+            </div>
+          </div>
+        </div>
+
+
+        <div class="container">
+          <div class="card" id="transactions">
+            <div class="title">
+              <h2>數據</h2>
+              <p class="subtitle"></p>
+            </div>
+            <div id="tablehere" class="content">
+              <table id="table" class="table">
+              </table>
+            </div>
+          </div>
+
+
+          <!-- <div class="card" id="chart">
+            <div class="title">
+              <h2>情緒值範圍</h2>
+              <p class="subtitle"></p>
+            </div>
+            <div class="content">
+              <canvas id="sales_ratio_chart" width="1" height="1"></canvas>
+              <div>&emsp;&emsp;&emsp;<img src="icon/angry.png" style="width: 35px" />&emsp;Anger&emsp;&emsp;0~6</div><br>
+              <div>&emsp;&emsp;&emsp;<img src="icon/boredom.png" style="width: 35px" />&emsp;Boredom&emsp;0~6</div><br>
+              <div>&emsp;&emsp;&emsp;<img src="icon/disgust.png" style="width: 35px" />&emsp;Disgust&emsp;&emsp;0~6</div><br>
+              <div>&emsp;&emsp;&emsp;<img src="icon/anxiety.png" style="width: 35px" />&emsp;Anxiety&emsp;&emsp;0~6</div><br>
+              <div>&emsp;&emsp;&emsp;<img src="icon/happiness.png" style="width: 35px" />&emsp;Happiness&emsp;0~6</div><br>
+              <div>&emsp;&emsp;&emsp;<img src="icon/sadness.png" style="width: 35px" />&emsp;Sadness&emsp;0~6</div><br>
+              <div>&emsp;&emsp;&emsp;<img src="icon/surprised.png" style="width: 35px" />&emsp;Surprised&emsp;0~6</div>
+            </div>
+          </div> -->
+          <div class="card" id="chart">
+            <div class="title">
+              <h2>生活作息統計</h2>
+              <p class="subtitle">Life style sta</p>
+            </div>
+            <div class="content">
+              <canvas id="sales_ratio_chart" width="1" height="1"></canvas>
+              <div id="linechart" style="height: 40%;width: 100%;"></div>
+            </div>
+            <div class="content">
+              <canvas id="sales_ratio_chart" width="1" height="1"></canvas>
+              <div id="linechart2" style="height: 40%;width: 100%;"></div>
+            </div>
+          </div>
+
+        </div>  
+      </div>
+    </div>
+  </body>
+
+  <!--slido-->
+  <script type="text/javascript">
+    function js(){
+      jQuery(document).ready(function ($) {
+        $('#checkbox').change(function(){
+          setInterval(function () {
+              moveRight();
+          }, 3000);
+        });
+        
+        var slideCount = $('#slider ul li').length;
+        var slideWidth = $('#slider ul li').width();
+        var slideHeight = $('#slider ul li').height();
+        var sliderUlWidth = slideCount * slideWidth;
+        
+        $('#slider').css({ width: slideWidth, height: slideHeight });
+        
+        $('#slider ul').css({ width: sliderUlWidth, marginLeft: - slideWidth });
+        
+          $('#slider ul li:last-child').prependTo('#slider ul');
+
+          function moveLeft() {
+              $('#slider ul').animate({
+                  left: + slideWidth
+              }, 200, function () {
+                  $('#slider ul li:last-child').prependTo('#slider ul');
+                  $('#slider ul').css('left', '');
+              });
+          };
+
+          function moveRight() {
+              $('#slider ul').animate({
+                  left: - slideWidth
+              }, 200, function () {
+                  $('#slider ul li:first-child').appendTo('#slider ul');
+                  $('#slider ul').css('left', '');
+              });
+          };
+
+          $('a.control_prev').click(function () {
+              moveLeft();
+          });
+
+          $('a.control_next').click(function () {
+              moveRight();
+          });
+        });
+    }
+  </script>
+  
+  <script>
+    function tag(i) {
+      var str = i.split(",");
+      var Vtime = str[1];
+      var Vaccount = window.name;
+      var Anger = document.getElementById('points'+str[0]+0).value;
+      var Boredom = document.getElementById('points'+str[0]+1).value;
+      var Disgust = document.getElementById('points'+str[0]+2).value;
+      var Anxiety = document.getElementById('points'+str[0]+3).value;
+      var Happiness = document.getElementById('points'+str[0]+4).value;
+      var Sadness = document.getElementById('points'+str[0]+5).value;
+      var Surprised = document.getElementById('points'+str[0]+6).value;
+
+      alert(Vtime+"標記成功");
+      var update = $.ajax({
+              type: "POST",
+              url: "sql/update_info_tag.php",
+              data: {account: Vaccount, time: Vtime, tag_Anger: Anger, tag_Boredom: Boredom, tag_Disgust: Disgust, tag_Anxiety: Anxiety, tag_Happiness: Happiness, tag_Sadness: Sadness, tag_Surprised: Surprised},
+              dataType: "json",
+              async: false
+          }).responseText;
+      //alert(str[0]);
+      //alert(str[1]);
+    }
+  </script>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <script type="text/javascript">
+    google.charts.load('current', {'packages':['line']});
+    google.charts.setOnLoadCallback(drawChart);
+
+    function drawChart(array) {
+      var data = new google.visualization.DataTable();
+      data.addColumn('string', 'Day');
+      data.addColumn('number', '起床時間');
+      data.addColumn('number', '睡覺時間');
+      data.addColumn('number', '睡眠時長');
+      data.addRows(array);
+
+    var formatNumer = new google.visualization.NumberFormat({pattern: 'decimal'});
+    formatNumer.format(data, 1);
+      var options = {
+          chart: {
+            title: '睡眠週期(小時)',
+            subtitle: ''
+          }
+      };
+
+      var chart = new google.charts.Line(document.getElementById('linechart'));
+      chart.draw(data, google.charts.Line.convertOptions(options));
+    }
+    function drawChart2(array) {
+      var data = new google.visualization.DataTable();
+      data.addColumn('string', 'Day');
+      data.addColumn('number', '每日心情');
+      // data.addColumn('number', '行走時間');
+      data.addRows(array);
+
+    var formatNumer = new google.visualization.NumberFormat({pattern: 'decimal'});
+    formatNumer.format(data, 1);
+      // formatNumer.format(data, 2);
+      var options = {
+          chart: {
+            title: '分數(0-6)',
+            subtitle: ''
+          }
+      };
+
+      var chart = new google.charts.Line(document.getElementById('linechart2'));
+      chart.draw(data, google.charts.Line.convertOptions(options));
+    }
+  </script>
+  <script>
+    function AcctoMednum(Mednum) {
+      var Account = '';
+      var jsonData = $.ajax({
+                type: "POST",
+                url: "sql/SelectMed.php",
+                data: {mn: Mednum},
+                dataType: "json",
+                async: false
+            }).responseText;
+        obj = eval("(" + jsonData + ")");
+      if (obj[0].account != ""){
+        Account = obj[0].account;
+      }
+      return Account;
+    }
+  </script>
+</html>

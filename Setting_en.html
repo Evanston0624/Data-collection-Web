@@ -1,0 +1,235 @@
+<html>
+	<meta charset="utf-8">
+	<link href="//vjs.zencdn.net/7.3.0/video-js.min.css" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <script src="//vjs.zencdn.net/7.3.0/video.min.js"></script>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <!-- <link href="app_style/style.css" rel="stylesheet"> -->
+    <!-- <script type="text/javascript" src="data/data.js"></script> -->
+
+	<script language="javascript">
+	window.onload = function () {
+;		//確定登入狀態
+		checkLogin();
+
+		//錄音
+		//錄影
+		//文字
+		//每日心情
+		//起床與睡眠時間
+		//GPS
+		//每週量表
+
+		//取得帳號
+		var account = getCookie('account');
+		// alert(account);
+		//查詢使用者的植物、點數
+		var jsonData = $.ajax({
+			    type: "POST",
+			    url: "sql/checkAccountInf.php",
+			    data: {at: account},
+			    dataType: "json",
+		        async: false
+		}).responseText;
+		var obj = eval("(" + jsonData + ")");
+		var data = obj[0].data;
+	};
+	//意見回饋
+	function infFeedback(){
+		var lanStrtest = ['有什麼建議嗎?在底下留言吧!'];
+		var lanStrsuccess = ["上傳成功!","多收集資料可以讓自己變得更好"];
+		var lanStrfail = ["上傳失敗!","請稍後在試"];
+    	var lanStrerror = ["Oh noes!", "內容不能為空哦!"];
+
+		var lanStrtest = ['Any suggestions? Leave a comment below!'];
+		var lanStrsuccess = ["Uploaded successfully!","Collect more information to make yourself better"];
+		var lanStrfail = ["Upload failed!","Internet connection failed, try again later!"];
+    	var lanStrerror = ["Oh noes!", "Content cannot be empty!"];
+
+		swal({
+		  	text: lanStrtest[0],
+		  	content: "input",
+		  	button: {
+		    text: "Search!",
+		    closeModal: false,
+		  },
+		})
+		.then(name => {
+		  	if (!name) throw null;
+		  	//取得帳號資訊
+		 	var account = getCookie('account');
+			//上傳使用者意見回饋
+			var jsonData = $.ajax({
+				    type: "POST",
+				    url: "sql/InsertFeedback.php",
+				    data: {at: account, type: 1, write:name},
+				    dataType: "json",
+			        async: false
+			}).responseText;
+			var obj = eval("(" + jsonData + ")");
+
+			//成功區
+		 	if (obj.success == '1'){
+			  	swal.stopLoading();
+	    		swal.close();
+	    		swal(lanStrsuccess[0], lanStrsuccess[1], "success");
+	    	//失敗區
+		 	}else {
+		 		swal.stopLoading();
+	    		swal.close();
+	    		swal(lanStrfail[0], lanStrfail[1], "error");
+		 	}
+		})
+		.catch(err => {
+		  	if (err) {
+		    	swal(lanStrerror[0], lanStrerror[1], "error");
+		  	} else {
+		    	swal.stopLoading();
+		    	swal.close();
+		  	}
+		});
+	}
+	//登出
+	function Signout() {
+		// var lanStr = ['成功登出', '稍後跳轉至登入頁面'];
+		var lanStr = ['Logout successful!', 'Jump to the login page later'];
+		delCookie('account');
+		delCookie('d');
+		swal(lanStr[0],lanStr[1], "success");
+		setTimeout(
+			function(){
+			toLogin();
+		}, 1000);
+	};
+
+	// 連接區
+	function toLogin(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/login_en.html");
+	};
+	function tocreateAccount(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/createAcc_en.html");
+	};
+
+	function toforgotPassword(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/forgotPassword_en.html");
+	};
+
+	function dataCollection(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/dataCollection_en.html");
+	};
+
+	function toPoint(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/Point_en.html");
+	};
+
+	function toFeedback(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/Feedback_en.html");
+	};
+	function toDatalist(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/dataList_en.html");
+	};
+	function toSetting(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/Setting_en.html");
+	};
+	function toVersion(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/login.html");
+	};
+	// cookie 區-------------------------------------------
+	//獲取cookie
+	function getCookie(cname) {
+	    var name = cname + "=";
+	    var ca = document.cookie.split(';');
+	    for(var i=0; i<ca.length; i++) {
+	        var c = ca[i];
+	        while (c.charAt(0)==' ') c = c.substring(1);
+	        if (c.indexOf(name) != -1) return c.substring(name.length, c.length);
+	    }
+	    return "";
+	};
+	//清除cookie  
+	function delCookie(name) {
+	    var exp = new Date();
+	    exp.setTime(exp.getTime() - 1);
+	    var cval=getCookie(name);
+	    if(cval!=null)
+        document.cookie= name + "="+cval+";expires="+exp.toGMTString();
+	};
+	//設定cookie
+	function setCookie(cname, cvalue, exdays) {
+	    var d = new Date();
+	    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+	    var expires = "expires="+d.toUTCString();
+	    document.cookie = cname + "=" + cvalue + "; " + expires;
+	}
+	//檢查登入狀況是否逾期
+	function checkLogin() {
+		// var lanStr = ['登入逾期了!','請重新登入'];
+		var lanStr = ['Login expired!','Please login again'];
+		var timestamp = (new Date()).valueOf();
+		// alert(timestamp);
+		if (timestamp >= getCookie('d')) {
+
+			delCookie('account');
+			delCookie('d');
+			swal(lanStr[0],lanStr[1], "warning");
+			setTimeout(function(){
+						toLogin();
+						}, 3000);
+		}else{
+			delCookie('d');
+			setCookie('d', timestamp+(10*60*1000));
+		}
+	};
+	</script>
+<!-- 	<style>
+		html, body {
+		  	height: 100%; /*外層高度100%*/
+		  	margin: 0;
+		}
+		.wrapper {
+		  	min-height: 100%; /*外層高度100%*/
+		  	margin-bottom: -50px; /*隨footer高度需做調整*/
+		}
+		.contant{
+		  	padding-bottom: 50px; /*避免文字超出瀏覽器時，內容區塊不會和footer打架*/
+		}
+		.footer{
+		  	height: 50px; /*設定footer本身高度*/
+		  	background-color: red;
+		}
+	</style> -->
+	<body>
+		<title>"Mood APP settings"</title><BR>
+		<h2>Settings</h2>
+
+		<div>
+			<div><input  class="button black" id="Signout" type="button" runat="server"  value="　Log out　" onclick="Signout()" /></div>
+			<br>
+			<div><input  class="button black" id="Signout" type="button" runat="server"  value="User feedback" onclick="infFeedback()" /></div>
+			<br>
+			<div><input  class="button black" id="Signout" type="button" runat="server"  value="Chinese Version" onclick="toVersion()" /></div>
+			<br>
+		    <div class="content">
+		    	<table width="100%">
+			   	<th>
+			   		<button type="button" id="page5" onclick="dataCollection()"><img src="image/page1.png" style="width:50%;height:20%"></button>
+			   	</th>
+			   	<th>
+					<button type="button" id="page5" onclick="toPoint()"><img src="image/page2.png" style="width:50%;height:20%"></button>
+				</th>
+			   	<th>
+					<button type="button" id="page5" onclick="toFeedback()"><img src="image/page3.png" style="width:50%;height:20%"></button>
+				</th>
+			   	<th>
+					<button type="button" id="page5" onclick="toDatalist()"><img src="image/page4.png" style="width:50%;height:20%"></button>
+				</th>
+			   	<th>
+					<button type="button" id="page5" onclick=""><img src="image/page5i.png" style="width:50%;height:20%"></button>
+				</th>
+				</table>
+		    </div>
+		</div>
+	</body>
+</html>
+

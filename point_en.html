@@ -1,0 +1,443 @@
+<html>
+	<meta charset="utf-8">
+	<link href="//vjs.zencdn.net/7.3.0/video-js.min.css" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <script src="//vjs.zencdn.net/7.3.0/video.min.js"></script>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <!-- <link href="app_style/style.css" rel="stylesheet"> -->
+    <!-- <script type="text/javascript" src="data/data.js"></script> -->
+
+	<script language="javascript">
+	//通用變數設置
+	var videolink_ori = '';
+	var videolink_int = '';
+
+	window.onload = function () {
+		//新增日期資訊
+		var timestamp = (new Date()).valueOf();
+
+		//確定登入狀態
+		checkLogin();
+
+		//語言
+		// var lanStrbutn = ['種植新的', '點擊植物與其互動!', '植物生長兌換為水滴','水滴數量'];
+		var lanStrbutn = ['Plant new plants', "Click on the plants to interact!", 'Plant growth is converted into water droplets','Number of water droplets:'];
+
+		//設置播放的影片區---------------------
+
+		//根據使用者選擇的植物與Point播放對應的影片
+		//取得帳號
+		var account = getCookie('account');
+		// alert(account);
+		//查詢使用者的植物、點數
+		var jsonData = $.ajax({
+			    type: "POST",
+			    url: "sql/checkAccountInf.php",
+			    data: {at: account},
+			    dataType: "json",
+		        async: false
+		}).responseText;
+		var obj = eval("(" + jsonData + ")");
+		var data = obj[0].data;
+
+		//植物生長進度條
+		// console.log(parseInt(parseFloat(data.Point_v2),10),data.Plantedtype);
+		move(parseInt(parseFloat(data.Point_v2),10),data.Plantedtype);
+
+		//植物圖檔路徑
+		videolink = "app_gif/";
+		//判斷植物種類
+		if (data.Plantedtype == '0'){
+			//未種植圖片
+			videolink_ori = videolink + 'plant_choose.gif';
+			videolink_int = videolink + 'plant_choose.gif';
+		}else if (data.Plantedtype == '1'){
+			videolink = videolink + 'sunflower';
+		}else if (data.Plantedtype == '2'){
+			videolink = videolink + 'dandelion';
+		}else if (data.Plantedtype == '3'){
+			videolink = videolink + 'humble';
+		}else if (data.Plantedtype == '4'){
+			videolink = videolink + 'convallaria';
+		}else if (data.Plantedtype == '5'){
+			videolink = videolink + 'holly';
+		}
+		//判斷生長情形
+		var Point_v2 = parseFloat(data.Point_v2);
+		if (data.Plantedtype != '0'){
+			// 植物原始狀態
+			if (Point_v2 <=249.9){
+				videolink_ori = videolink + '1_1.gif';
+			}else if (Point_v2 <= 499.9 && Point_v2 >= 250.0){
+				videolink_ori = videolink + '2_1.gif';
+			}else if (Point_v2 <= 749.9 && Point_v2 >= 500.0){
+				videolink_ori = videolink + '3_1.gif';
+			}else if (Point_v2 <= 999.9 && Point_v2 >= 750.0){
+				videolink_ori = videolink + '4_1.gif';
+			}else if (Point_v2 >= 1000.0){
+				videolink_ori = videolink + '5_1.gif';
+			}
+			// 植物互動狀態
+			if (Point_v2 <=249.9){
+				videolink_int = videolink + '1_2.gif';
+			}else if (Point_v2 <= 499.9 && Point_v2 >= 250.0){
+				videolink_int = videolink + '2_2.gif';
+			}else if (Point_v2 <= 749.9 && Point_v2 >= 500.0){
+				videolink_int = videolink + '3_2.gif';
+			}else if (Point_v2 <= 999.9 && Point_v2 >= 750.0){
+				videolink_int = videolink + '4_2.gif';
+			}else if (Point_v2 >= 1000.0){
+				videolink_int = videolink + '5_2.gif';
+			}
+		}
+		
+		//設置按鈕名稱
+		if (data.Plantedtype == '0'){
+			document.querySelector('#ShowButton').value = lanStrbutn[0];
+		}else if (data.Plantedtype != '0' && Point_v2 <= 990.0){
+			document.querySelector('#ShowButton').value = lanStrbutn[1];
+		}else if (data.Plantedtype != '0' && Point_v2 >= 1000.0){
+			document.querySelector('#ShowButton').value = lanStrbutn[2];
+		}
+		//設計互動按鈕動作
+		//影片播放
+		image = document.getElementById("my-video");
+		image.src = videolink_ori;
+		image.style.width='95%';
+		
+		//修改水滴數量
+		var Dropnum = lanStrbutn[3]+data.Drop;
+		document.getElementById("DropID").textContent=Dropnum;
+
+	};
+	// 點擊植物進行互動
+	function plantInteraction(){
+		//撥放互動gif
+		image = document.getElementById("my-video");
+		image.src = videolink_int;
+		image.style.width='95%';
+		//撥放完成自動切換回原本的
+		//JS無法判斷GIF是否播放完成，因此使用延遲2秒後執行此動作
+		setTimeout(function(){
+		    image.src = videolink_ori;
+		},2500);
+	}
+	// 修改互動按鈕
+	function showFilterItem() {
+		//取得帳號
+		var account = getCookie('account');
+		//查詢使用者的植物、點數
+		var jsonData = $.ajax({
+			    type: "POST",
+			    url: "sql/checkAccountInf.php",
+			    data: {at: account},
+			    dataType: "json",
+		        async: false
+		}).responseText;
+		var obj = eval("(" + jsonData + ")");
+		var data = obj[0].data;
+
+		var Point_v2 = parseFloat(data.Point_v2);
+		videolink = "app_video/";
+		//判斷植物種類
+		if (data.Plantedtype == '0'){
+			videolink = videolink + 'plant_choose.mp4';
+		}else if (data.Plantedtype == '1'){
+			videolink = videolink + 'sunflower';
+		}else if (data.Plantedtype == '2'){
+			videolink = videolink + 'dandelion';
+		}else if (data.Plantedtype == '3'){
+			videolink = videolink + 'humble';
+		}else if (data.Plantedtype == '4'){
+			videolink = videolink + 'convallaria';
+		}else if (data.Plantedtype == '5'){
+			videolink = videolink + 'holly';
+		}
+		//判斷生長情形(正常 and 互動)
+		if (Point_v2 <=249.9){
+			videolink2 = videolink + '1_1.mp4';
+			videolink3 = videolink + '1_2.mp4';
+		}else if (Point_v2 <= 499.9 && Point_v2 >= 250.0){
+			videolink2 = videolink + '2_1.mp4';
+			videolink3 = videolink + '2_2.mp4';
+		}else if (Point_v2 <= 749.9 && Point_v2 >= 500.0){
+			videolink2 = videolink + '3_1.mp4';
+			videolink3 = videolink + '3_2.mp4';
+		}else if (Point_v2 <= 999.9 && Point_v2 >= 750.0){
+			videolink2 = videolink + '4_1.mp4';
+			videolink3 = videolink + '4_2.mp4';
+		}else if (Point_v2 >= 1000.0){
+			videolink2 = videolink + '5_1.mp4';
+			videolink3 = videolink + '5_2.mp4';
+		}
+	    if (data.Plantedtype == '0'){
+	    // 未種植區域
+	    	// var lanStrcho = ['左上', '左中', '左下', '右上', '右下'];
+	    	var lanStrcho = ['upper left', 'middle left', 'lower left', 'top right', 'lower right'];
+			document.getElementById("ShowButton").addEventListener("click",function(){
+				swal({
+				    icon: "info",
+				    buttons:{
+				        A: {
+				        text: lanStrcho[0],
+				        value: "4"
+				        },
+				        B: {
+				        text: lanStrcho[1],
+				        value: "3"
+				        },
+				        C: {
+				        text: lanStrcho[2],
+				        value: "5"
+				        },
+				        D: {
+				        text: lanStrcho[3],
+				        value: "1"
+				        },
+				        E: {
+				        text: lanStrcho[4],
+				        value: "2"
+				        }
+				    }
+				}).then((value) => {
+				    var account = getCookie('account');
+					// alert(account);
+					//更新植物型態
+					var jsonData = $.ajax({
+						    type: "POST",
+						    url: "sql/UpdatePlantedtype.php",
+						    data: {at: account, pty: value},
+						    dataType: "json",
+					        async: false
+					}).responseText;
+					var obj = eval("(" + jsonData + ")");
+					lanStrNot = ['hoose success!','choose failed!','Network connection failed, please try again later!'];
+					if (obj.success == '1'){
+
+						swal(lanStrNot[0], {icon: "success",});
+
+						delCookie('d');
+			        	var timestamp2 = (new Date()).valueOf();
+			        	setCookie('d', timestamp2+(10*60*1000));
+
+						setTimeout(function(){
+							window.location.reload();
+						}, 3000);
+					}else {
+						 swal(lanStrNot[1],lanStrNot[2], "error");
+					}
+				});
+			});
+		}else if (data.Plantedtype != '0' && Point_v2 <= 990.0){
+		// 互動區改為點擊圖片
+
+		}else if (data.Plantedtype != '0' && Point_v2 >= 1000.0){
+		// 兌換區域
+			lanStrnot = ["Are you sure about the exchange?",
+			"After the exchange, the plants will disappear and start growing again!",
+			"Selection success!",
+			"Selection failed!", 
+			"Network connection failed, please try again later!", 
+			"Selection failed!","Network connection failed, please try again later!", 
+			"Redeem it when you want to change it!"];
+			swal({
+			    title: lanStrnot[0],
+			    text: lanStrnot[1],
+			    icon: "warning",
+			    buttons: true,
+			    dangerMode: true,
+			})
+			.then((willDelete) => {
+			    if (willDelete) {
+			    	var account = getCookie('account');
+					// alert(account);
+					//更新植物型態
+					var jsonData = $.ajax({
+						    type: "POST",
+						    url: "sql/UpdatePlantedtype.php",
+						    data: {at: account, pty: 0},
+						    dataType: "json",
+					        async: false
+					}).responseText;
+					var obj = eval("(" + jsonData + ")");
+					if (obj.success == '1'){
+						var jsonData2 = $.ajax({
+							    type: "POST",
+							    url: "sql/UpdateDrop.php",
+							    data: {at: account},
+							    dataType: "json",
+						        async: false
+							}).responseText;
+						var obj2 = eval("(" + jsonData2 + ")");
+						if (obj2.success == '1'){
+							swal(lanStrnot[2], {icon: "success",});
+
+			        		delCookie('d');
+			        		var timestamp2 = (new Date()).valueOf();
+			        		setCookie('d', timestamp2+(10*60*1000));
+
+							setTimeout(function(){
+								window.location.reload();
+							}, 3000);
+						}else{
+							swal(lanStrnot[3],lanStrnot[4], "error");
+						}
+					}else {
+						swal(lanStrnot[3],lanStrnot[5], "error");
+					}
+			  	} else {
+			        swal(lanStrnot[6]);
+			  	}
+			});
+		}
+	};
+	// 連接區
+	function toLogin(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/login_en.html");
+	};
+	function tocreateAccount(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/createAcc_en.html");
+	};
+
+	function toforgotPassword(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/forgotPassword_en.html");
+	};
+
+	function dataCollection(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/dataCollection_en.html");
+	};
+
+	function toPoint(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/Point_en.html");
+	};
+
+	function toFeedback(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/Feedback_en.html");
+	};
+	function toDatalist(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/dataList_en.html");
+	};
+	function toSetting(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/Setting_en.html");
+	};
+	
+	//植物生長進度條
+	//此處的設置要*0.95，若沒有的話會超過原始設定的95%(留白部分)
+	function move(point, Plantedtype) {
+	    var elem = document.getElementById("myBar");
+	    var width = point;
+	    var Plantedtype = Plantedtype;
+	    // width = 0;
+	    console.log();
+	    //判斷點數與是否有種植
+	    if (width >= 1000 && Plantedtype != '0'){
+	    	width = 100;
+	    }else if (width < 1000 && Plantedtype != '0'){
+	    	width = parseInt(point/10);
+	    }else{
+	    	width = 0;
+	    }
+	    //設定與增加單位
+	    elem.style.width = width + '%';
+	}
+	// cookie 區-------------------------------------------
+	//獲取cookie
+	function getCookie(cname) {
+	    var name = cname + "=";
+	    var ca = document.cookie.split(';');
+	    for(var i=0; i<ca.length; i++) {
+	        var c = ca[i];
+	        while (c.charAt(0)==' ') c = c.substring(1);
+	        if (c.indexOf(name) != -1) return c.substring(name.length, c.length);
+	    }
+	    return "";
+	};
+	//清除cookie  
+	function delCookie(name) {
+	    var exp = new Date();
+	    exp.setTime(exp.getTime() - 1);
+	    var cval=getCookie(name);
+	    if(cval!=null)
+        document.cookie= name + "="+cval+";expires="+exp.toGMTString();
+	};
+	//設定cookie
+	function setCookie(cname, cvalue, exdays) {
+	    var d = new Date();
+	    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+	    var expires = "expires="+d.toUTCString();
+	    document.cookie = cname + "=" + cvalue + "; " + expires;
+	}
+	//檢查登入狀況是否逾期
+	function checkLogin() {
+		// var lanStr = ['登入逾期了!','請重新登入'];
+		var lanStr = ['Login expired!','Please login again'];
+		var timestamp = (new Date()).valueOf();
+		// alert(timestamp);
+		if (timestamp >= getCookie('d')) {
+
+			delCookie('account');
+			delCookie('d');
+			swal(lanStr[0],lanStr[1], "warning");
+			setTimeout(function(){
+				toLogin();
+			}, 3000);
+		}else{
+			delCookie('d');
+			setCookie('d', timestamp+(10*60*1000));
+		}
+	};
+	</script>
+	<style>
+	#myProgress {
+	  position: relative;
+	  width: 95%;
+	  height: 30px;
+	  background-color: #ddd;
+	}
+
+	#myBar {
+	  position: absolute;
+	  width: 95%;
+	  height: 100%;
+	  background-color: #4CAF50;
+	}
+/*	#my-video {
+		  	width: 95%;
+		  	height: 89%;
+		  	background-color: write;
+		}*/
+	</style>
+	<body>
+		<title>"Mood APP Plant Rewards"</title><BR>
+		<h2>Plant growth</h2>
+		<div><img id="my-video" src="" alt="gifImg" onclick="plantInteraction()" /><BR></div>
+		<BR>
+		<div> Plant growth progress: </div>
+		<div id="myProgress"><div id="myBar"></div></div>
+		<BR>
+		<div><span id="DropID"> Number of water droplets: </span></div>
+		<div><input  class="button black" id="ShowButton" type="button" runat="server"  value="Show Filter" onclick="showFilterItem()" /></div>
+		<div><span id="SpanID"> In addition to making yourself better, you can also get rewards for continuing to collect. </span></div>
+		<div class="content">
+		    	<table width="100%">
+			   	<th>
+			   		<button type="button" id="page1" onclick="dataCollection()"><img src="image/page1.png" style="width:50%;height:20%"></button>
+			   	</th>
+			   	<th>
+					<button type="button" id="page2" onclick=""><img src="image/page2i.png" style="width:50%;height:20%"></button>
+				</th>
+			   	<th>
+					<button type="button" id="page3" onclick="toFeedback()"><img src="image/page3.png" style="width:50%;height:20%"></button>
+				</th>
+			   	<th>
+					<button type="button" id="page4" onclick="toDatalist()"><img src="image/page4.png" style="width:50%;height:20%"></button>
+				</th>
+			   	<th>
+					<button type="button" id="page5" onclick="toSetting()"><img src="image/page5.png" style="width:50%;height:20%"></button>
+				</th>
+				</table>
+		    </div>
+	</body>
+</html>
+

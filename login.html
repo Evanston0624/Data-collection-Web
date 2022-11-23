@@ -1,0 +1,120 @@
+<html>
+	<meta charset="utf-8">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <!-- <link href="app_style/style.css" rel="stylesheet"> -->
+    <!-- <script type="text/javascript" src="data/data.js"></script> -->
+
+	<script language="javascript">
+	function login(){
+		const accountElement = document.getElementsByName('account');
+  		const account = accountElement[0].value;
+
+  		const passwordElement = document.getElementsByName('password');
+  		const password = passwordElement[0].value;
+
+  		// alert(document.cookie);
+
+  		if (account.length >= 4 && account.length <= 12) {
+  			if (password.length >= 4 && password.length <= 12) {
+				var jsonData = $.ajax({
+					    type: "POST",
+					    url: "sql/logIn.php",
+					    data: {at: account, pw: password},
+					    dataType: "json",
+				        async: false
+
+				}).responseText;
+				var obj = eval("(" + jsonData + ")");
+				//判斷帳號是否重複
+				// confirm(JSON.stringify(obj));
+				if (obj[0].success == '1'){
+					swal("Sign in suceesfully!","Will jump to the data collection page later", "success");
+
+					var timestamp = (new Date()).valueOf();
+					setCookie('account', account);
+					setCookie('d', timestamp+(10*60*1000));
+					// document.cookie = 'account="account";date="timestamp";'
+					setTimeout(function(){
+						window.location.assign("http://140.116.82.102:8080/app_webpage/dataCollection_en.html");
+						}, 3000);
+
+				}else {
+					swal("Login failed!","If you forget your password, you can go to the password query page", "error");
+				}
+			}else {
+				swal("Login failed!","Password length is 4 to 12 characters", "error");
+			}
+		}else {
+			swal("Login failed!","Password length is 4 to 12 characters", "error");
+		}
+	}
+
+	function tocreateAccount(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/createAcc_en.html");
+	}
+	function toforgotPassword(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/forgotPassword_en.html");
+	}
+	function toVersion(){
+		window.location.assign("http://140.116.82.102:8080/app_webpage/login.html");
+	};
+	//設定cookie
+	function setCookie(cname, cvalue, exdays) {
+	    var d = new Date();
+	    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+	    var expires = "expires="+d.toUTCString();
+	    document.cookie = cname + "=" + cvalue + "; " + expires;
+	}
+	//獲取cookie
+	function getCookie(cname) {
+	    var name = cname + "=";
+	    var ca = document.cookie.split(';');
+	    for(var i=0; i<ca.length; i++) {
+	        var c = ca[i];
+	        while (c.charAt(0)==' ') c = c.substring(1);
+	        if (c.indexOf(name) != -1) return c.substring(name.length, c.length);
+	    }
+	    return "";
+	}
+	//清除cookie  
+	function clearCookie(name) {  
+	    setCookie(name, "", -1);  
+	}  
+	function checkCookie() {
+	    var user = getCookie("username");
+	    if (user != "") {
+	        alert("Welcome again " + user);
+	    } else {
+	        user = prompt("Please enter your name:", "");
+	        if (user != "" && user != null) {
+	            setCookie("username", user, 365);
+	        }
+	    }
+	}
+	</script>
+		<p>
+			<link href="styles/style.css" rel="stylesheet" type="text/css">
+			<link href="styles/styler.css" rel="stylesheet" type="text/css">
+			<body>
+				<head>
+					<title>"NCKU Mood APP login page"</title><BR>
+					<strong>NCKU Mood APP login page</strong><BR>
+				</head>
+				Account: <INPUT TYPE="text" NAME="account"><BR>
+				password: <INPUT TYPE="password" NAME="password"><BR>
+			    <input type="button" onclick="login()" value="Login">
+			    <BR>
+		    </body>
+		    <head>
+		    	<div>
+		  			<input TYPE="button" onclick="tocreateAccount()" value="Create an account">
+					<input TYPE="button" onclick="toforgotPassword()" value="Forgot password?">
+				</div>
+				<div>
+					<input TYPE="button" onclick="toVersion()" value="中文版本">
+				</div>
+			</head>
+		</p>
+</html>
