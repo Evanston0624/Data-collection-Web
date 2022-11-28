@@ -1,7 +1,6 @@
 # Data-collection-Android-APP 
 - The training and testing data are not included here.
 - If you have any questions about the code, please email: g192e1654k@gmail.com
-- Web link : http://140.116.82.102:8080/app_webpage/login_en.html
 
 # Exhibit
 - ![image](https://github.com/Evanston0624/Data-collection-Android-APP/tree/main/result/colection.png)
